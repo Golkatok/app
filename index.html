@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JahvirChat App</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <script>
+        const CONFIG = {
+            // Заполните своими ключами при деплое
+            YOUTUBE_API_KEY: "YOUR_YT_KEY", 
+            YOUTUBE_CHANNEL_ID: "YOUR_CHANNEL_ID", 
+            GEMINI_API_KEY: "YOUR_GEMINI_KEY"
+        };
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="theme-system scheme-ocean">
+
+    <header class="app-header">
+        <div class="user-info">
+            <img id="user-avatar" src="" alt="Avatar" class="avatar">
+            <div class="user-text">
+                <span class="greeting">Привет,</span>
+                <span id="user-name">Загрузка...</span>
+            </div>
+        </div>
+        <div class="header-controls">
+            <button class="icon-btn" onclick="toggleSettings()">
+                <span class="material-icons-round">settings</span>
+            </button>
+            <button class="icon-btn" onclick="toggleMenu()">
+                <span class="material-icons-round">menu</span>
+            </button>
+        </div>
+    </header>
+
+    <div id="menu-dropdown" class="menu-dropdown hidden">
+        <button onclick="navigate('home')">
+            <span class="material-icons-round">home</span> Главная
+        </button>
+        <button onclick="navigate('jahvir-ai')">
+            <span class="material-icons-round">smart_toy</span> Jahvir AI
+        </button>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Настройки</h3>
+            
+            <div class="setting-group">
+                <label>Тема оформления</label>
+                <select id="theme-select" onchange="changeTheme(this.value)">
+                    <option value="theme-system">Системная</option>
+                    <option value="theme-light">Светлая</option>
+                    <option value="theme-dark">Темная</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Цветовая схема</label>
+                <select id="scheme-select" onchange="changeScheme(this.value)">
+                    <option value="scheme-ocean">Ocean (Синяя)</option>
+                    <option value="scheme-crimson">Crimson (Красная)</option>
+                    <option value="scheme-forest">Forest (Зеленая)</option>
+                </select>
+            </div>
+
+            <button class="btn-primary full-width" onclick="toggleSettings()">Закрыть</button>
+        </div>
+    </div>
+
+    <main>
+        <section id="page-home" class="page active-page">
+            <div class="card stat-card">
+                <div class="stat-icon"><span class="material-icons-round">subscriptions</span></div>
+                <div class="stat-info">
+                    <h2>Подписчики</h2>
+                    <p id="yt-subs">Загрузка...</p>
+                </div>
+            </div>
+
+            <div class="card video-card">
+                <div class="card-header">
+                    <span class="material-icons-round">play_circle</span> Последнее видео
+                </div>
+                <h3 id="yt-video">Загрузка...</h3>
+                <div id="video-player-container" class="video-container">
+                    <div class="placeholder-video">Нет данных</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-jahvir-ai" class="page hidden-page">
+            <div class="chat-header">
+                <span class="status-dot"></span> JahvirChat
+                <button class="clear-btn" onclick="clearHistory()" title="Очистить историю">
+                    <span class="material-icons-round">delete_sweep</span>
+                </button>
+            </div>
+            
+            <div id="chat-output" class="chat-container">
+                <div class="message bot">
+                    Йо! Я Jahvir. Че надо? <br>Только давай без глупостей.
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Напиши сообщение..." autocomplete="off">
+                <button class="send-btn" onclick="sendMessage()">
+                    <span class="material-icons-round">send</span>
+                </button>
+            </div>
+        </section>
+        
+        <div id="page-placeholder" class="page hidden-page"></div>
+    </main>
+
+    <div id="toast-bottom" class="toast toast-bottom hidden">
+        <span class="material-icons-round error-icon">error_outline</span>
+        <span>О нет! Что-то пошло не так.</span>
+    </div>
+
+    <div id="toast-side" class="toast toast-side hidden">
+        <div class="toast-content">
+            <h4>Ошибка системы</h4>
+            <p>Сообщи нам код ошибки, чтобы мы могли все починить.</p>
+            <button class="copy-err-btn" onclick="copyLastError()">
+                <span class="material-icons-round">content_copy</span> Копировать код
+            </button>
+        </div>
+        <button class="close-toast" onclick="hideSideToast()">
+            <span class="material-icons-round">close</span>
+        </button>
+    </div>
+
+    <script src="script (1).js"></script>
+</body>
+                  </html>
