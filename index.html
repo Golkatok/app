@@ -2,141 +2,224 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>JahvirChat App</title>
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <script>
         const CONFIG = {
-            // Заполните своими ключами при деплое
             YOUTUBE_API_KEY: "YOUR_YT_KEY", 
             YOUTUBE_CHANNEL_ID: "YOUR_CHANNEL_ID", 
             GEMINI_API_KEY: "YOUR_GEMINI_KEY"
         };
     </script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="theme-system scheme-ocean">
+<body class="theme-system scheme-ocean text-size-m">
+
+    <div id="login-screen" class="login-overlay">
+        <div class="login-content">
+            <div class="logo-area">
+                <div class="logo-icon"><span class="material-icons-round">bolt</span></div>
+                <h1>JahvirChat</h1>
+                <p>Твой умный ассистент</p>
+            </div>
+            
+            <div class="login-methods">
+                <div id="telegram-login-container" class="tg-widget-placeholder">
+                    <button class="btn-tg-mock" onclick="alert('Для работы кнопки нужна регистрация домена в BotFather')">
+                        <span class="material-icons-round">near_me</span> Войти через Telegram
+                    </button>
+                </div>
+
+                <div class="divider"><span>или</span></div>
+
+                <button class="btn-secondary full-width" onclick="openGuestSetup()">
+                    Войти как Гость
+                </button>
+            </div>
+        </div>
+    </div>
 
     <header class="app-header">
-        <div class="user-info">
-            <img id="user-avatar" src="" alt="Avatar" class="avatar">
+        <div class="user-info" onclick="openProfileEdit()">
+            <img id="user-avatar" src="images/image1.png" alt="Avatar" class="avatar">
             <div class="user-text">
-                <span class="greeting">Привет,</span>
-                <span id="user-name">Загрузка...</span>
+                <span class="greeting">Добро пожаловать,</span>
+                <span id="user-name">Гость</span>
             </div>
+            <span class="material-icons-round edit-hint">edit</span>
         </div>
         <div class="header-controls">
             <button class="icon-btn" onclick="toggleSettings()">
-                <span class="material-icons-round">settings</span>
+                <span class="material-icons-round">tune</span>
             </button>
             <button class="icon-btn" onclick="toggleMenu()">
-                <span class="material-icons-round">menu</span>
+                <span class="material-icons-round">grid_view</span>
             </button>
         </div>
     </header>
 
     <div id="menu-dropdown" class="menu-dropdown hidden">
         <button onclick="navigate('home')">
-            <span class="material-icons-round">home</span> Главная
+            <span class="material-icons-round">dashboard</span> Главная
         </button>
         <button onclick="navigate('jahvir-ai')">
-            <span class="material-icons-round">smart_toy</span> Jahvir AI
+            <span class="material-icons-round">psychology</span> Jahvir AI
         </button>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3>Настройки</h3>
-            
-            <div class="setting-group">
-                <label>Тема оформления</label>
-                <select id="theme-select" onchange="changeTheme(this.value)">
-                    <option value="theme-system">Системная</option>
-                    <option value="theme-light">Светлая</option>
-                    <option value="theme-dark">Темная</option>
-                </select>
-            </div>
-
-            <div class="setting-group">
-                <label>Цветовая схема</label>
-                <select id="scheme-select" onchange="changeScheme(this.value)">
-                    <option value="scheme-ocean">Ocean (Синяя)</option>
-                    <option value="scheme-crimson">Crimson (Красная)</option>
-                    <option value="scheme-forest">Forest (Зеленая)</option>
-                </select>
-            </div>
-
-            <button class="btn-primary full-width" onclick="toggleSettings()">Закрыть</button>
-        </div>
+        <div class="menu-divider"></div>
+        <button class="menu-danger" onclick="logout()">
+            <span class="material-icons-round">logout</span> Выйти
+        </button>
     </div>
 
     <main>
         <section id="page-home" class="page active-page">
-            <div class="card stat-card">
-                <div class="stat-icon"><span class="material-icons-round">subscriptions</span></div>
-                <div class="stat-info">
-                    <h2>Подписчики</h2>
-                    <p id="yt-subs">Загрузка...</p>
+            <div class="hero-card">
+                <h2>Статистика канала</h2>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="material-icons-round">groups</span>
+                        <div class="stat-value" id="yt-subs">---</div>
+                        <div class="stat-label">Подписчики</div>
+                    </div>
                 </div>
             </div>
 
+            <div class="section-title">Медиа</div>
             <div class="card video-card">
-                <div class="card-header">
-                    <span class="material-icons-round">play_circle</span> Последнее видео
-                </div>
-                <h3 id="yt-video">Загрузка...</h3>
                 <div id="video-player-container" class="video-container">
-                    <div class="placeholder-video">Нет данных</div>
+                    <div class="placeholder-video">
+                        <span class="material-icons-round">play_circle_outline</span>
+                        Загрузка видео...
+                    </div>
+                </div>
+                <div class="video-info">
+                    <h3 id="yt-video">Последнее видео</h3>
                 </div>
             </div>
         </section>
 
         <section id="page-jahvir-ai" class="page hidden-page">
-            <div class="chat-header">
-                <span class="status-dot"></span> JahvirChat
-                <button class="clear-btn" onclick="clearHistory()" title="Очистить историю">
-                    <span class="material-icons-round">delete_sweep</span>
-                </button>
-            </div>
-            
-            <div id="chat-output" class="chat-container">
-                <div class="message bot">
-                    Йо! Я Jahvir. Че надо? <br>Только давай без глупостей.
+            <div class="chat-wrapper">
+                <div id="chat-output" class="chat-container">
+                    <div class="message bot">
+                        Йо! Я Jahvir. <br>Спрашивай, но не душни.
+                    </div>
                 </div>
-            </div>
-
-            <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Напиши сообщение..." autocomplete="off">
-                <button class="send-btn" onclick="sendMessage()">
-                    <span class="material-icons-round">send</span>
-                </button>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Сообщение..." autocomplete="off">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <span class="material-icons-round">arrow_upward</span>
+                    </button>
+                </div>
             </div>
         </section>
         
         <div id="page-placeholder" class="page hidden-page"></div>
     </main>
 
-    <div id="toast-bottom" class="toast toast-bottom hidden">
-        <span class="material-icons-round error-icon">error_outline</span>
-        <span>О нет! Что-то пошло не так.</span>
+    <div id="guest-modal" class="modal-overlay hidden">
+        <div class="modal-content bottom-sheet">
+            <div class="modal-header">
+                <h3>Создание профиля</h3>
+                <button class="close-icon" onclick="closeGuestSetup()"><span class="material-icons-round">close</span></button>
+            </div>
+            
+            <div class="avatar-upload-wrapper">
+                <img id="guest-preview" src="images/image1.png" class="avatar-large">
+                <label for="guest-file" class="upload-btn"><span class="material-icons-round">camera_alt</span></label>
+                <input type="file" id="guest-file" accept="image/*" onchange="previewAvatar(this, 'guest-preview')" hidden>
+            </div>
+
+            <div class="input-group">
+                <label>Твой никнейм</label>
+                <input type="text" id="guest-nickname" placeholder="Например: SigmaBoy">
+            </div>
+
+            <button class="btn-primary full-width" onclick="finishGuestLogin()">Продолжить</button>
+        </div>
     </div>
 
-    <div id="toast-side" class="toast toast-side hidden">
-        <div class="toast-content">
-            <h4>Ошибка системы</h4>
-            <p>Сообщи нам код ошибки, чтобы мы могли все починить.</p>
-            <button class="copy-err-btn" onclick="copyLastError()">
-                <span class="material-icons-round">content_copy</span> Копировать код
-            </button>
+    <div id="profile-modal" class="modal-overlay hidden">
+        <div class="modal-content bottom-sheet">
+            <div class="modal-header">
+                <h3>Редактировать профиль</h3>
+                <button class="close-icon" onclick="toggleProfileEdit()"><span class="material-icons-round">close</span></button>
+            </div>
+            
+            <div class="avatar-upload-wrapper">
+                <img id="edit-preview" src="" class="avatar-large">
+                <label for="edit-file" class="upload-btn"><span class="material-icons-round">edit</span></label>
+                <input type="file" id="edit-file" accept="image/*" onchange="previewAvatar(this, 'edit-preview')" hidden>
+            </div>
+
+            <div class="input-group">
+                <label>Никнейм</label>
+                <input type="text" id="edit-nickname">
+            </div>
+
+            <button class="btn-primary full-width" onclick="saveProfileChanges()">Сохранить</button>
         </div>
-        <button class="close-toast" onclick="hideSideToast()">
-            <span class="material-icons-round">close</span>
-        </button>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content bottom-sheet">
+            <div class="modal-header">
+                <h3>Настройки</h3>
+                <button class="close-icon" onclick="toggleSettings()"><span class="material-icons-round">close</span></button>
+            </div>
+            
+            <div class="settings-list">
+                <div class="setting-item">
+                    <label>Тема</label>
+                    <select id="theme-select" onchange="changeTheme(this.value)">
+                        <option value="theme-system">Авто</option>
+                        <option value="theme-light">Светлая</option>
+                        <option value="theme-dark">Темная</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label>Акцент</label>
+                    <div class="scheme-toggles">
+                        <button class="scheme-dot ocean" onclick="changeScheme('scheme-ocean')"></button>
+                        <button class="scheme-dot crimson" onclick="changeScheme('scheme-crimson')"></button>
+                        <button class="scheme-dot forest" onclick="changeScheme('scheme-forest')"></button>
+                        <button class="scheme-dot violet" onclick="changeScheme('scheme-violet')"></button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label>Размер текста</label>
+                    <select id="font-size-select" onchange="changeFontSize(this.value)">
+                        <option value="text-size-s">Мелкий</option>
+                        <option value="text-size-m" selected>Обычный</option>
+                        <option value="text-size-l">Крупный</option>
+                    </select>
+                </div>
+
+                <div class="setting-item switch-row">
+                    <label>Звуки уведомлений</label>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-bottom" class="toast toast-bottom hidden">
+        <span class="material-icons-round error-icon">info</span>
+        <span id="toast-msg">Сообщение</span>
     </div>
 
     <script src="js/script.js"></script>
 </body>
-                  </html>
+</html>
