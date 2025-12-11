@@ -5,36 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Технический перерыв</title>
     <style>
-        /* --- Переменные и Темы (Адаптация под систему) --- */
+        /* --- Настройки --- */
         :root {
-            /* Светлая тема (по умолчанию) */
-            --bg-color: #F2F4F6;
-            --accent-blob: #3B82F6; /* Мягкий синий */
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.8);
-            --text-primary: #111827;
-            --text-secondary: #6B7280;
-            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
-            --icon-bg: rgba(59, 130, 246, 0.1);
-            --icon-color: #2563EB;
+            --bg-deep: #050511;
+            --blob-1: #4c1d95; /* Насыщенный фиолетовый */
+            --blob-2: #1e3a8a; /* Глубокий синий */
+            --blob-3: #be123c; /* Акцентный красный */
+            
+            --glass-bg: rgba(20, 20, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #9CA3AF; /* Серый цвет для Упс и подзаголовка */
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                /* Темная тема */
-                --bg-color: #0f1115;
-                --accent-blob: #60A5FA;
-                --glass-bg: rgba(30, 35, 45, 0.6);
-                --glass-border: rgba(255, 255, 255, 0.08);
-                --text-primary: #FFFFFF;
-                --text-secondary: #9CA3AF;
-                --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                --icon-bg: rgba(96, 165, 250, 0.15);
-                --icon-color: #60A5FA;
-            }
-        }
-
-        /* --- Базовые настройки --- */
         * {
             margin: 0;
             padding: 0;
@@ -43,130 +26,174 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-deep);
             height: 100vh;
             width: 100vw;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            transition: background-color 0.5s ease;
+            color: var(--text-main);
             position: relative;
         }
 
-        /* --- Фоновое "дышащее" пятно --- */
-        /* Нужно, чтобы был виден эффект стекла */
-        .ambient-light {
+        /* --- Насыщенный фон (чтобы не было пусто) --- */
+        .background-fx {
             position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--bg-deep);
+            overflow: hidden;
+        }
+
+        /* Цветовые пятна */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.6;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
             width: 60vw;
             height: 60vw;
-            background: var(--accent-blob);
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.15;
+            background: var(--blob-1);
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--blob-2);
+            animation-delay: -5s;
+        }
+
+        .blob-3 {
+            top: 40%;
+            left: 40%;
+            width: 30vw;
+            height: 30vw;
+            background: var(--blob-3);
+            opacity: 0.4;
+            animation-duration: 15s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(20px, -20px) scale(1.05); }
+        }
+
+        /* Сетка поверх фона для текстуры (техно-стиль) */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
             z-index: -1;
-            animation: breathe 8s infinite ease-in-out;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
         }
 
-        @keyframes breathe {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.15; }
-            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.25; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.15; }
-        }
-
-        /* --- Карточка (Glassmorphism) --- */
-        .glass-card {
+        /* --- Основная карточка --- */
+        .glass-container {
+            position: relative;
             background: var(--glass-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px); /* Safari support */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            padding: 3.5rem 2.5rem;
-            border-radius: 32px;
+            padding: 4rem 3rem;
+            border-radius: 24px;
             width: 90%;
-            max-width: 440px;
-            text-align: center;
-            box-shadow: var(--shadow);
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            transition: all 0.5s ease;
+            gap: 1.5rem;
         }
 
-        /* --- Иконка --- */
-        .icon-wrapper {
-            width: 64px;
-            height: 64px;
-            background: var(--icon-bg);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            color: var(--icon-color);
-        }
-
-        .icon-wrapper svg {
-            width: 32px;
-            height: 32px;
-            stroke-width: 2;
-        }
-
-        /* --- Типографика --- */
-        h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            letter-spacing: -0.02em;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
+        /* Индикатор работы */
+        .loader-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
             margin-bottom: 0.5rem;
         }
 
-        p {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        /* --- Адаптив --- */
-        @media (max-width: 480px) {
-            .glass-card {
-                padding: 2.5rem 1.5rem;
-                border-radius: 24px;
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        /* Текстовый блок */
+        .message-content {
+            font-size: 1.05rem;
+            line-height: 1.8; /* Увеличенный межстрочный интервал */
+            color: var(--text-muted); /* Весь текст серый */
+            font-weight: 400;
+        }
+
+        /* Отступы между абзацами (как Enter) */
+        .message-content p {
+            margin-bottom: 0.8rem; 
+        }
+
+        /* Убираем отступ у последнего */
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Адаптив */
+        @media (max-width: 600px) {
+            .glass-container {
+                padding: 2.5rem 2rem;
             }
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.75rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="ambient-light"></div>
+    <div class="background-fx">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
 
-    <div class="glass-card">
-        <div class="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </div>
+    <div class="glass-container">
+        <div class="loader-icon"></div>
 
         <h1>Технический перерыв</h1>
         
-        <div class="subtitle">Упс!</div>
-        
-        <p>
-            У нас сейчас технический перерыв, мы сейчас работаем над проблемами, так что возвращайся позже.
-        </p>
+        <div class="message-content">
+            <p>Упс!</p>
+            <p>У нас сейчас технический перерыв.</p>
+            <p>Мы сейчас работаем над проблемами.</p>
+            <p>Так что возвращайся позже.</p>
+        </div>
     </div>
 
 </body>
