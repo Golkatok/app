@@ -1,148 +1,184 @@
 // === КОНФИГУРАЦИЯ ===
-// Берем ключи из config.js
 let KEYS = { YOUTUBE_KEY: "", YOUTUBE_ID: "", GEMINI_KEY: "" };
-try {
-    if (typeof CONFIG !== 'undefined') {
-        KEYS = { YOUTUBE_KEY: CONFIG.YOUTUBE_API_KEY, YOUTUBE_ID: CONFIG.YOUTUBE_CHANNEL_ID, GEMINI_KEY: CONFIG.GEMINI_API_KEY };
-    }
-} catch (e) { console.error("Config missing"); }
+if (typeof CONFIG !== 'undefined') {
+    KEYS = { YOUTUBE_KEY: CONFIG.YOUTUBE_API_KEY, YOUTUBE_ID: CONFIG.YOUTUBE_CHANNEL_ID, GEMINI_KEY: CONFIG.GEMINI_API_KEY };
+}
 
-const GEMINI_MODEL = 'gemini-2.5-flash'; 
+const GEMINI_MODEL = 'gemini-2.0-flash'; // Обновил модель, если доступна
 
-// ПРОМПТ (Тот самый, полный)
 const SYSTEM_PROMPT = `
 Ты JahvirChat помощник. НЕ Jahvir.
 ЛИЧНОСТЬ: Позитивный, с насмешкой. JAHVIR - крутой сигма. Голка - "да". Осуди - "осуууждаю". Код/ДЗ - нет.
-ПРАВИЛА:
-1. Запреты: Оск, Шок-контент (18+), Политика/Религия/Война, Спам (>4), Тег админов, Слив данных, Оффтопик, Мат в нике, Реклама.
-2. Наказания: Мут, Кик, Бан.
-3. Админы: Не нарушать, иначе снятие.
-ФОРМАТ: Читабельно, с Enter.
+ФОРМАТ: Читабельно, с Enter. Без маркдауна в обычных фразах.
 `;
 
-const tg = window.Telegram.WebApp;
-tg.expand(); 
-
-// Хранилище последней ошибки
-let lastErrorText = "";
+// === STATE MANAGEMENT ===
+const DEFAULT_AVATAR = 'images/image1.png'; // Убедитесь, что файл существует
+let currentUser = {
+    name: 'Гость',
+    avatar: DEFAULT_AVATAR,
+    isLoggedIn: false
+};
 
 // === STARTUP ===
 window.onload = () => {
-    loadTelegramUserData();
-    
-    // Темы и Схемы
-    const savedTheme = localStorage.getItem('axel_theme') || 'theme-system';
-    const savedScheme = localStorage.getItem('axel_scheme') || 'scheme-ocean';
-    
-    applyTheme(savedTheme);
-    applyScheme(savedScheme);
-    
-    document.getElementById('theme-select').value = savedTheme;
-    document.getElementById('scheme-select').value = savedScheme;
-
-    if (KEYS.YOUTUBE_KEY) loadYouTubeStats();
-    
-    // Анимация входа
-    document.getElementById('page-home').classList.add('fade-in');
+    loadSettings();
+    checkAuth();
 };
 
-// === ОШИБКИ (НОВАЯ СИСТЕМА) ===
-function showError(technicalMessage) {
-    lastErrorText = technicalMessage || "Неизвестная ошибка";
-    
-    // 1. Показываем нижний тост "О нет!"
-    const bottomToast = document.getElementById('toast-bottom');
-    bottomToast.classList.remove('hidden');
-    // Небольшая задержка для CSS анимации
-    setTimeout(() => bottomToast.classList.add('show'), 10);
-    
-    // Скрываем нижний тост через 5 сек
-    setTimeout(() => {
-        bottomToast.classList.remove('show');
-        setTimeout(() => bottomToast.classList.add('hidden'), 500);
-    }, 5000);
-
-    // 2. Показываем боковой тост "Сообщи нам"
-    const sideToast = document.getElementById('toast-side');
-    sideToast.classList.remove('hidden');
-    setTimeout(() => sideToast.classList.add('show'), 10);
-}
-
-function hideSideToast() {
-    const sideToast = document.getElementById('toast-side');
-    sideToast.classList.remove('show');
-    setTimeout(() => sideToast.classList.add('hidden'), 400);
-}
-
-function copyLastError() {
-    if (!lastErrorText) return;
-    navigator.clipboard.writeText(lastErrorText).then(() => {
-        const btn = document.querySelector('.copy-err-btn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="material-icons-round">check</span> Скопировано!';
-        setTimeout(() => btn.innerHTML = originalText, 2000);
-    });
-}
-
-// === НАВИГАЦИЯ (Плавная) ===
-function toggleMenu() { 
-    const menu = document.getElementById('menu-dropdown');
-    if (menu.classList.contains('hidden')) {
-        menu.classList.remove('hidden');
+// === AUTH SYSTEM ===
+function checkAuth() {
+    const savedUser = localStorage.getItem('jahvir_user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        initApp();
     } else {
-        menu.classList.add('hidden');
+        // Показать экран входа
+        document.getElementById('login-screen').classList.remove('closed');
     }
+}
+
+function initApp() {
+    // Скрыть экран входа
+    document.getElementById('login-screen').classList.add('closed');
+    
+    // Обновить UI
+    updateHeaderUI();
+    
+    // Загрузить данные
+    if (KEYS.YOUTUBE_KEY) loadYouTubeStats();
+    
+    // Приветствие в консоли
+    console.log("App Started as", currentUser.name);
+}
+
+// Guest Login Logic
+function openGuestSetup() {
+    document.getElementById('guest-modal').classList.remove('hidden');
+}
+
+function closeGuestSetup() {
+    document.getElementById('guest-modal').classList.add('hidden');
+}
+
+function finishGuestLogin() {
+    const nickInput = document.getElementById('guest-nickname').value.trim();
+    const avatarImg = document.getElementById('guest-preview').src;
+    
+    currentUser.name = nickInput || "Гость";
+    currentUser.avatar = avatarImg;
+    currentUser.isLoggedIn = true;
+    
+    localStorage.setItem('jahvir_user', JSON.stringify(currentUser));
+    
+    closeGuestSetup();
+    initApp();
+}
+
+function logout() {
+    localStorage.removeItem('jahvir_user');
+    location.reload();
+}
+
+// === PROFILE MANAGEMENT ===
+function updateHeaderUI() {
+    document.getElementById('user-name').innerText = currentUser.name;
+    document.getElementById('user-avatar').src = currentUser.avatar;
+}
+
+function openProfileEdit() {
+    document.getElementById('edit-nickname').value = currentUser.name;
+    document.getElementById('edit-preview').src = currentUser.avatar;
+    document.getElementById('profile-modal').classList.remove('hidden');
+    // Закрыть меню если открыто
+    document.getElementById('menu-dropdown').classList.add('hidden');
+}
+
+function toggleProfileEdit() {
+    const modal = document.getElementById('profile-modal');
+    modal.classList.toggle('hidden');
+}
+
+function saveProfileChanges() {
+    const newNick = document.getElementById('edit-nickname').value.trim();
+    const newAvatar = document.getElementById('edit-preview').src;
+    
+    if(newNick) currentUser.name = newNick;
+    currentUser.avatar = newAvatar;
+    
+    localStorage.setItem('jahvir_user', JSON.stringify(currentUser));
+    updateHeaderUI();
+    toggleProfileEdit();
+    showToast("Профиль обновлен");
+}
+
+// === IMAGE HANDLING (Base64) ===
+function previewAvatar(input, imgId) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Сжимаем или просто отображаем.
+            // Для локального хранения лучше сжимать, но пока просто сохраняем DataURL
+            document.getElementById(imgId).src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// === UI & NAVIGATION ===
+function toggleMenu() { 
+    document.getElementById('menu-dropdown').classList.toggle('hidden');
 }
 
 function toggleSettings() { 
-    const modal = document.getElementById('settings-modal');
-    if (modal.classList.contains('hidden')) {
-        modal.classList.remove('hidden');
-    } else {
-        modal.classList.add('hidden');
-    }
+    document.getElementById('settings-modal').classList.toggle('hidden');
 }
 
 function navigate(pageId) {
     document.getElementById('menu-dropdown').classList.add('hidden');
     
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(p => {
-        p.classList.remove('fade-in'); // Убираем анимацию
-        setTimeout(() => {
+    // Скрываем текущие
+    document.querySelectorAll('.page').forEach(p => {
+        if(p.classList.contains('active-page')) {
             p.classList.remove('active-page');
             p.classList.add('hidden-page');
-        }, 400); // Ждем пока исчезнет (400ms transition)
+        }
     });
-    
+
     let targetId = 'page-placeholder';
     if (pageId === 'home') targetId = 'page-home';
     if (pageId === 'jahvir-ai') targetId = 'page-jahvir-ai';
     
     const target = document.getElementById(targetId);
     
-    // Задержка чтобы прошла анимация исчезновения
+    // Маленькая задержка для анимации
     setTimeout(() => {
         target.classList.remove('hidden-page');
         target.classList.add('active-page');
-        // Запуск анимации появления
-        setTimeout(() => target.classList.add('fade-in'), 50);
-    }, 400);
+    }, 50);
 }
 
-// === THEME MANAGER ===
+// === SETTINGS MANAGER ===
+function loadSettings() {
+    const theme = localStorage.getItem('axel_theme') || 'theme-system';
+    const scheme = localStorage.getItem('axel_scheme') || 'scheme-ocean';
+    const fSize = localStorage.getItem('axel_fsize') || 'text-size-m';
+    
+    changeTheme(theme);
+    changeScheme(scheme);
+    changeFontSize(fSize);
+    
+    document.getElementById('theme-select').value = theme;
+    document.getElementById('font-size-select').value = fSize;
+}
+
 function changeTheme(val) {
     localStorage.setItem('axel_theme', val);
-    applyTheme(val);
-}
-function applyTheme(val) {
     document.body.classList.remove('theme-light', 'theme-dark', 'theme-system');
+    
     if (val === 'theme-system') {
-        if (tg.colorScheme === 'dark' || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.body.classList.add('theme-dark');
-        } else {
-            document.body.classList.add('theme-light');
-        }
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.body.classList.add(isDark ? 'theme-dark' : 'theme-light');
     } else {
         document.body.classList.add(val);
     }
@@ -150,40 +186,38 @@ function applyTheme(val) {
 
 function changeScheme(val) {
     localStorage.setItem('axel_scheme', val);
-    applyScheme(val);
-}
-function applyScheme(val) {
-    // Удаляем старые схемы
-    document.body.classList.forEach(className => {
-        if (className.startsWith('scheme-')) document.body.classList.remove(className);
+    document.body.classList.forEach(c => {
+        if(c.startsWith('scheme-')) document.body.classList.remove(c);
     });
     document.body.classList.add(val);
 }
 
-// === AI LOGIC ===
-let chatHistory = [];
-function clearHistory() {
-    chatHistory = [];
-    document.getElementById('chat-output').innerHTML = '<div class="message bot">Память очищена.</div>';
+function changeFontSize(val) {
+    localStorage.setItem('axel_fsize', val);
+    document.body.classList.forEach(c => {
+        if(c.startsWith('text-size-')) document.body.classList.remove(c);
+    });
+    document.body.classList.add(val);
 }
+
+// === AI LOGIC (Сохранена) ===
+let chatHistory = [];
 
 async function sendMessage() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text) return;
     
-    if (!KEYS.GEMINI_KEY) {
-        showError("API Key Missing (Config Error)");
-        return;
-    }
-
     appendMessage(text, 'user');
     input.value = '';
-    input.disabled = true;
+    
+    // Animation UX
+    const btn = document.querySelector('.send-btn');
+    btn.style.transform = 'scale(0.8)';
+    setTimeout(() => btn.style.transform = 'scale(1)', 150);
 
-    if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
     let contents = [{ role: "user", parts: [{ text: SYSTEM_PROMPT }] }];
-    chatHistory.forEach(msg => contents.push(msg));
+    chatHistory.slice(-6).forEach(msg => contents.push(msg));
     contents.push({ role: "user", parts: [{ text: text }] });
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${KEYS.GEMINI_KEY}`;
@@ -196,22 +230,15 @@ async function sendMessage() {
         });
         const data = await res.json();
 
-        if (data.error) {
-            console.error(data.error);
-            // ВЫЗЫВАЕМ НОВУЮ ОШИБКУ, А НЕ ПИШЕМ В ЧАТ
-            showError("AI Error: " + data.error.message);
-        } else {
-            const reply = data.candidates[0].content.parts[0].text;
-            chatHistory.push({ role: "user", parts: [{ text: text }] });
-            chatHistory.push({ role: "model", parts: [{ text: reply }] });
-            appendMessage(reply, 'bot');
-        }
+        if (data.error) throw new Error(data.error.message);
+        
+        const reply = data.candidates[0].content.parts[0].text;
+        chatHistory.push({ role: "user", parts: [{ text: text }] });
+        chatHistory.push({ role: "model", parts: [{ text: reply }] });
+        appendMessage(reply, 'bot');
+
     } catch (e) {
-        console.error(e);
-        showError("Network Error: " + e.message);
-    } finally {
-        input.disabled = false;
-        input.focus();
+        showToast("Ошибка AI: " + e.message);
     }
 }
 
@@ -219,91 +246,39 @@ function appendMessage(txt, type) {
     const box = document.getElementById('chat-output');
     const div = document.createElement('div');
     div.className = `message ${type}`;
-    div.innerHTML = txt.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
-    
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.width = '100%';
-    
-    if (type === 'bot') {
-        wrapper.style.alignItems = 'flex-start';
-        wrapper.appendChild(div);
-        // Копирование сообщения
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'copy-btn'; // Добавить стиль если пропал
-        copyBtn.innerText = 'Копировать';
-        copyBtn.style.cssText = "margin-left:5px;background:none;border:none;color:var(--text-muted);font-size:10px;cursor:pointer;";
-        copyBtn.onclick = () => { navigator.clipboard.writeText(txt); };
-        wrapper.appendChild(copyBtn);
-    } else {
-        wrapper.style.alignItems = 'flex-end';
-        wrapper.appendChild(div);
-    }
-    
-    box.appendChild(wrapper);
+    div.innerHTML = txt.replace(/\n/g, '<br>');
+    box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
 
-// === YOUTUBE API ===
+// === YOUTUBE (Сохранено) ===
 async function loadYouTubeStats() {
-    const subsEl = document.getElementById('yt-subs');
-    const videoTitleEl = document.getElementById('yt-video');
-    const videoContainer = document.getElementById('video-player-container');
-
     try {
-        // 1. Subs
-        const chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${KEYS.YOUTUBE_ID}&key=${KEYS.YOUTUBE_KEY}`);
-        if (!chanRes.ok) throw new Error(`Channel API: ${chanRes.status}`);
-        const chanData = await chanRes.json();
-        
-        if (chanData.items) {
-            subsEl.innerText = Number(chanData.items[0].statistics.subscriberCount).toLocaleString(); 
-        }
+        // Subs
+        const cRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${KEYS.YOUTUBE_ID}&key=${KEYS.YOUTUBE_KEY}`);
+        const cData = await cRes.json();
+        if (cData.items) document.getElementById('yt-subs').innerText = Number(cData.items[0].statistics.subscriberCount).toLocaleString();
 
-        // 2. Video
-        const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${KEYS.YOUTUBE_KEY}&channelId=${KEYS.YOUTUBE_ID}&part=snippet&order=date&maxResults=1&type=video`);
-        if (!vidRes.ok) throw new Error(`Video API: ${vidRes.status}`);
-        const vidData = await vidRes.json();
-        
-        if (vidData.items && vidData.items.length > 0) {
-            const video = vidData.items[0];
-            videoTitleEl.innerText = video.snippet.title;
-            const videoId = video.id.videoId;
-            videoContainer.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" title="Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        } else {
-            videoTitleEl.innerText = "Нет видео";
+        // Video
+        const vRes = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${KEYS.YOUTUBE_KEY}&channelId=${KEYS.YOUTUBE_ID}&part=snippet&order=date&maxResults=1&type=video`);
+        const vData = await vRes.json();
+        if (vData.items && vData.items.length > 0) {
+            const vid = vData.items[0];
+            document.getElementById('yt-video').innerText = vid.snippet.title;
+            document.getElementById('video-player-container').innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${vid.id.videoId}" frameborder="0" allowfullscreen></iframe>`;
         }
-
-    } catch (e) {
-        console.error("YT Error:", e);
-        subsEl.innerText = "Ошибка";
-        videoTitleEl.innerText = "Сбой";
-        // Здесь можно тоже вызвать showError, если критично
-        showError("YouTube API Error: " + e.message);
-    }
+    } catch (e) { console.error("YT Error", e); }
 }
 
-// === TELEGRAM DATA ===
-function loadTelegramUserData() {
-    const nameEl = document.getElementById('user-name');
-    const avatarEl = document.getElementById('user-avatar');
-
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const user = tg.initDataUnsafe.user;
-        nameEl.innerText = user.first_name || 'User';
-        if (user.photo_url) avatarEl.src = user.photo_url;
-        else avatarEl.src = `https://ui-avatars.com/api/?name=${user.first_name}&background=random`;
-        
-        if (localStorage.getItem('axel_theme') === 'theme-system') {
-             if (tg.colorScheme === 'dark') document.body.classList.add('theme-dark');
-        }
-    } else {
-        nameEl.innerText = "Tester";
-        avatarEl.src = "https://via.placeholder.com/150"; 
-    }
+// === UTILS ===
+function showToast(msg) {
+    const t = document.getElementById('toast-bottom');
+    document.getElementById('toast-msg').innerText = msg;
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
 document.getElementById('chat-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
+            
