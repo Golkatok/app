@@ -5,7 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Технический перерыв</title>
     <style>
-        /* --- 1. Сброс и База --- */
+        /* --- Переменные и Темы (Адаптация под систему) --- */
+        :root {
+            /* Светлая тема (по умолчанию) */
+            --bg-color: #F2F4F6;
+            --accent-blob: #3B82F6; /* Мягкий синий */
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+            --icon-bg: rgba(59, 130, 246, 0.1);
+            --icon-color: #2563EB;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Темная тема */
+                --bg-color: #0f1115;
+                --accent-blob: #60A5FA;
+                --glass-bg: rgba(30, 35, 45, 0.6);
+                --glass-border: rgba(255, 255, 255, 0.08);
+                --text-primary: #FFFFFF;
+                --text-secondary: #9CA3AF;
+                --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                --icon-bg: rgba(96, 165, 250, 0.15);
+                --icon-color: #60A5FA;
+            }
+        }
+
+        /* --- Базовые настройки --- */
         * {
             margin: 0;
             padding: 0;
@@ -14,264 +43,131 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #0f0c29; /* Темная подложка */
-            color: #ffffff;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
             position: relative;
         }
 
-        /* --- 2. Живой Фон (Mesh Gradient) --- */
-        .gradient-bg {
+        /* --- Фоновое "дышащее" пятно --- */
+        /* Нужно, чтобы был виден эффект стекла */
+        .ambient-light {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-            background: 
-                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-        }
-
-        .orb {
-            position: absolute;
+            width: 60vw;
+            height: 60vw;
+            background: var(--accent-blob);
             border-radius: 50%;
-            filter: blur(80px);
+            filter: blur(120px);
+            opacity: 0.15;
             z-index: -1;
-            animation: float 10s infinite ease-in-out alternate;
-            opacity: 0.6;
+            animation: breathe 8s infinite ease-in-out;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
-        .orb-1 {
-            width: 50vw;
-            height: 50vw;
-            background: #ff512f;
-            top: -10%;
-            left: -10%;
-            animation-duration: 14s;
+        @keyframes breathe {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.15; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.25; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.15; }
         }
 
-        .orb-2 {
-            width: 40vw;
-            height: 40vw;
-            background: #dd2476;
-            bottom: -10%;
-            right: -10%;
-            animation-duration: 11s;
-        }
-
-        .orb-3 {
-            width: 30vw;
-            height: 30vw;
-            background: #4facfe;
-            top: 40%;
-            left: 40%;
-            animation-duration: 16s;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(30px, 50px) scale(1.1); }
-        }
-
-        /* --- 3. Текстура Шума (Делает дизайн "не цифровым") --- */
-        .noise-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 99;
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        }
-
-        /* --- 4. Карточка (Glassmorphism) --- */
+        /* --- Карточка (Glassmorphism) --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 3rem;
-            border-radius: 24px;
-            max-width: 480px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px); /* Safari support */
+            border: 1px solid var(--glass-border);
+            padding: 3.5rem 2.5rem;
+            border-radius: 32px;
             width: 90%;
-            text-align: left;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            max-width: 440px;
+            text-align: center;
+            box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 10;
+            align-items: center;
+            transition: all 0.5s ease;
         }
 
+        /* --- Иконка --- */
+        .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            background: var(--icon-bg);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--icon-color);
+        }
+
+        .icon-wrapper svg {
+            width: 32px;
+            height: 32px;
+            stroke-width: 2;
+        }
+
+        /* --- Типографика --- */
         h1 {
-            font-size: 2.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            line-height: 1.1;
-            background: linear-gradient(to right, #ffffff, #dcdcdc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
             letter-spacing: -0.02em;
         }
 
-        p {
+        .subtitle {
             font-size: 1.1rem;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.7);
-            font-weight: 400;
-        }
-
-        /* Статус бар */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: #fff;
-            width: fit-content;
+            font-weight: 600;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
-        .dot {
-            width: 8px;
-            height: 8px;
-            background-color: #fca311;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(252, 163, 17, 0.7); }
-            70% { opacity: 1; box-shadow: 0 0 0 6px rgba(252, 163, 17, 0); }
-            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(252, 163, 17, 0); }
-        }
-
-        /* --- 5. Кнопка --- */
-        .btn-exit {
-            margin-top: 1rem;
-            background: transparent;
-            color: rgba(255,255,255,0.9);
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 14px 28px;
+        p {
             font-size: 1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            font-weight: 500;
-            text-decoration: none; /* Если используем <a> */
+            line-height: 1.6;
+            color: var(--text-secondary);
         }
 
-        .btn-exit:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.8);
-            transform: translateY(-2px);
-        }
-
-        .btn-exit:active {
-            transform: translateY(0);
-        }
-
-        /* Иконка выхода */
-        .icon-exit {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
-        /* Адаптив для мобильных */
-        @media (max-width: 600px) {
+        /* --- Адаптив --- */
+        @media (max-width: 480px) {
             .glass-card {
-                padding: 2rem;
+                padding: 2.5rem 1.5rem;
+                border-radius: 24px;
             }
             h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="noise-overlay"></div>
-
-    <div class="gradient-bg"></div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
+    <div class="ambient-light"></div>
 
     <div class="glass-card">
-        <div class="status-badge">
-            <span class="dot"></span>
-            Обновление систем
+        <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
         </div>
+
+        <h1>Технический перерыв</h1>
         
-        <h1>Мы делаем сервис<br>немного лучше.</h1>
+        <div class="subtitle">Упс!</div>
         
         <p>
-            Прямо сейчас мы проводим плановое техобслуживание, чтобы всё работало быстрее и надежнее. Скоро вернемся.
+            У нас сейчас технический перерыв, мы сейчас работаем над проблемами, так что возвращайся позже.
         </p>
-
-        <button class="btn-exit" onclick="exitApp()">
-            <span>Выйти из приложения</span>
-            <svg class="icon-exit" viewBox="0 0 24 24">
-                <path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9Z"/>
-            </svg>
-        </button>
     </div>
 
-    <script>
-        function exitApp() {
-            // Логика выхода зависит от окружения
-
-            // 1. Попытка закрыть окно (работает в PWA / WebView / некоторых попапах)
-            try {
-                window.close();
-            } catch (e) {
-                console.log("Window close blocked");
-            }
-
-            // 2. Если это мобильное приложение (Android/iOS WebView Bridge)
-            // Примеры распространенных интерфейсов:
-            if (window.Android) {
-                try { window.Android.closeApp(); } catch(e){}
-            }
-            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.closeApp) {
-                try { window.webkit.messageHandlers.closeApp.postMessage('close'); } catch(e){}
-            }
-
-            // 3. Фолбэк: если мы в браузере и не можем закрыть вкладку
-            // Обычно здесь делают редирект на страницу логина или гугла
-            // window.location.href = '/login'; 
-            
-            // Визуальный отклик, если закрытие невозможно сразу
-            const btn = document.querySelector('.btn-exit');
-            const originalText = btn.querySelector('span').innerText;
-            
-            btn.querySelector('span').innerText = 'Выходим...';
-            btn.style.opacity = '0.7';
-            
-            // Если ничего не сработало через 2 сек (для теста в браузере)
-            setTimeout(() => {
-                alert('Команда на закрытие отправлена (в реальном приложении окно закроется).');
-                btn.querySelector('span').innerText = originalText;
-                btn.style.opacity = '1';
-            }, 1000);
-        }
-    </script>
 </body>
 </html>
