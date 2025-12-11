@@ -1,24 +1,52 @@
 // === КОНФИГУРАЦИЯ ===
-let KEYS = { YOUTUBE_KEY: "", YOUTUBE_ID: "", GEMINI_KEY: "" };
-if (typeof CONFIG !== 'undefined') {
-    KEYS = { YOUTUBE_KEY: CONFIG.YOUTUBE_API_KEY, YOUTUBE_ID: CONFIG.YOUTUBE_CHANNEL_ID, GEMINI_KEY: CONFIG.GEMINI_API_KEY };
-}
+// Ваши ключи теперь встроены сюда
+const KEYS = { 
+    YOUTUBE_KEY: "AIzaSyASL1_rgK9P9-J2FK6uFwjObuwA8m1Cihg", 
+    YOUTUBE_ID: "UCrZA2Mj6yKZkEcBIqdfF6Ag", 
+    // Сюда нужно вставить ключ от Gemini, когда он у вас будет
+    GEMINI_KEY: "YOUR_GEMINI_KEY_HERE" 
+};
 
-const GEMINI_MODEL = 'gemini-2.0-flash'; // Обновил модель, если доступна
+const GEMINI_MODEL = 'gemini-2.0-flash'; 
 
 const SYSTEM_PROMPT = `
 Ты JahvirChat помощник. НЕ Jahvir.
 ЛИЧНОСТЬ: Позитивный, с насмешкой. JAHVIR - крутой сигма. Голка - "да". Осуди - "осуууждаю". Код/ДЗ - нет.
-ФОРМАТ: Читабельно, с Enter. Без маркдауна в обычных фразах.
+ФОРМАТ: Читабельно, с Enter.
 `;
 
 // === STATE MANAGEMENT ===
-const DEFAULT_AVATAR = 'images/image1.png'; // Убедитесь, что файл существует
+// Убедитесь, что эта картинка есть по пути: images/image1.png
+const DEFAULT_AVATAR = 'images/image1.png'; 
+
 let currentUser = {
     name: 'Гость',
     avatar: DEFAULT_AVATAR,
-    isLoggedIn: false
+    isLoggedIn: false,
+    tgId: null
 };
+
+// === TELEGRAM AUTH CALLBACK ===
+// Эта функция вызывается виджетом Telegram
+function onTelegramAuth(user) {
+    // 1. Берем данные из Telegram
+    const telegramName = user.first_name || user.username || "User";
+    const telegramAvatar = user.photo_url || DEFAULT_AVATAR;
+
+    // 2. Сохраняем в приложении
+    currentUser = {
+        name: telegramName,
+        avatar: telegramAvatar,
+        isLoggedIn: true,
+        tgId: user.id
+    };
+
+    localStorage.setItem('jahvir_user', JSON.stringify(currentUser));
+
+    // 3. Запускаем интерфейс
+    showToast(`Вход выполнен: ${telegramName}`);
+    initApp();
+}
 
 // === STARTUP ===
 window.onload = () => {
@@ -45,10 +73,9 @@ function initApp() {
     // Обновить UI
     updateHeaderUI();
     
-    // Загрузить данные
+    // Загрузить данные YouTube
     if (KEYS.YOUTUBE_KEY) loadYouTubeStats();
     
-    // Приветствие в консоли
     console.log("App Started as", currentUser.name);
 }
 
@@ -90,13 +117,11 @@ function openProfileEdit() {
     document.getElementById('edit-nickname').value = currentUser.name;
     document.getElementById('edit-preview').src = currentUser.avatar;
     document.getElementById('profile-modal').classList.remove('hidden');
-    // Закрыть меню если открыто
     document.getElementById('menu-dropdown').classList.add('hidden');
 }
 
 function toggleProfileEdit() {
-    const modal = document.getElementById('profile-modal');
-    modal.classList.toggle('hidden');
+    document.getElementById('profile-modal').classList.toggle('hidden');
 }
 
 function saveProfileChanges() {
@@ -117,8 +142,6 @@ function previewAvatar(input, imgId) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Сжимаем или просто отображаем.
-            // Для локального хранения лучше сжимать, но пока просто сохраняем DataURL
             document.getElementById(imgId).src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
@@ -200,13 +223,19 @@ function changeFontSize(val) {
     document.body.classList.add(val);
 }
 
-// === AI LOGIC (Сохранена) ===
+// === AI LOGIC ===
 let chatHistory = [];
 
 async function sendMessage() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text) return;
+
+    // Проверка ключа Gemini
+    if (!KEYS.GEMINI_KEY || KEYS.GEMINI_KEY === "YOUR_GEMINI_KEY_HERE") {
+        showToast("Ошибка: Нет API ключа Gemini");
+        return;
+    }
     
     appendMessage(text, 'user');
     input.value = '';
@@ -238,6 +267,7 @@ async function sendMessage() {
         appendMessage(reply, 'bot');
 
     } catch (e) {
+        console.error(e);
         showToast("Ошибка AI: " + e.message);
     }
 }
@@ -251,34 +281,62 @@ function appendMessage(txt, type) {
     box.scrollTop = box.scrollHeight;
 }
 
-// === YOUTUBE (Сохранено) ===
+// === YOUTUBE API ===
 async function loadYouTubeStats() {
-    try {
-        // Subs
-        const cRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${KEYS.YOUTUBE_ID}&key=${KEYS.YOUTUBE_KEY}`);
-        const cData = await cRes.json();
-        if (cData.items) document.getElementById('yt-subs').innerText = Number(cData.items[0].statistics.subscriberCount).toLocaleString();
+    const subsEl = document.getElementById('yt-subs');
+    const videoTitleEl = document.getElementById('yt-video');
+    const videoContainer = document.getElementById('video-player-container');
 
-        // Video
-        const vRes = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${KEYS.YOUTUBE_KEY}&channelId=${KEYS.YOUTUBE_ID}&part=snippet&order=date&maxResults=1&type=video`);
-        const vData = await vRes.json();
-        if (vData.items && vData.items.length > 0) {
-            const vid = vData.items[0];
-            document.getElementById('yt-video').innerText = vid.snippet.title;
-            document.getElementById('video-player-container').innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${vid.id.videoId}" frameborder="0" allowfullscreen></iframe>`;
+    try {
+        // 1. Получаем подписчиков
+        const chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${KEYS.YOUTUBE_ID}&key=${KEYS.YOUTUBE_KEY}`);
+        
+        if (!chanRes.ok) throw new Error(`Channel API: ${chanRes.status}`);
+        const chanData = await chanRes.json();
+        
+        if (chanData.items && chanData.items.length > 0) {
+            subsEl.innerText = Number(chanData.items[0].statistics.subscriberCount).toLocaleString(); 
+        } else {
+            console.warn("Канал не найден или скрыта статистика");
         }
-    } catch (e) { console.error("YT Error", e); }
+
+        // 2. Получаем последнее видео
+        const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${KEYS.YOUTUBE_KEY}&channelId=${KEYS.YOUTUBE_ID}&part=snippet&order=date&maxResults=1&type=video`);
+        
+        if (!vidRes.ok) throw new Error(`Video API: ${vidRes.status}`);
+        const vidData = await vidRes.json();
+        
+        if (vidData.items && vidData.items.length > 0) {
+            const video = vidData.items[0];
+            videoTitleEl.innerText = video.snippet.title;
+            const videoId = video.id.videoId;
+            videoContainer.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        } else {
+            videoTitleEl.innerText = "Видео не найдены";
+        }
+
+    } catch (e) {
+        console.error("YT Error:", e);
+        // Не показываем ошибку пользователю явно, чтобы не пугать при старте,
+        // просто оставляем заглушки или пишем в консоль.
+        if (subsEl) subsEl.innerText = "---";
+        showToast("Ошибка YouTube: Проверьте консоль");
+    }
 }
 
 // === UTILS ===
 function showToast(msg) {
     const t = document.getElementById('toast-bottom');
+    if (!t) return;
     document.getElementById('toast-msg').innerText = msg;
     t.classList.remove('hidden');
     setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
-document.getElementById('chat-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
-            
+// Отправка по Enter
+const chatInput = document.getElementById('chat-input');
+if (chatInput) {
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+    }
