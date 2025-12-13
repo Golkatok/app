@@ -5,23 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Технический перерыв</title>
     <style>
-        /* --- Настройки --- */
+        /* --- Настройки и Цвета --- */
         :root {
             --bg-deep: #050511;
-            --blob-1: #4c1d95; /* Насыщенный фиолетовый */
-            --blob-2: #1e3a8a; /* Глубокий синий */
-            --blob-3: #be123c; /* Акцентный красный */
+            --blob-1: #4c1d95;
+            --blob-2: #1e3a8a;
+            --blob-3: #be123c;
             
             --glass-bg: rgba(20, 20, 30, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #ffffff;
-            --text-muted: #9CA3AF; /* Серый цвет для Упс и подзаголовка */
+            --text-muted: #9CA3AF;
+            --status-color: #fbbf24;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            outline: none;
         }
 
         body {
@@ -37,7 +39,7 @@
             position: relative;
         }
 
-        /* --- Насыщенный фон (чтобы не было пусто) --- */
+        /* --- Фон --- */
         .background-fx {
             position: absolute;
             top: 0;
@@ -49,7 +51,6 @@
             overflow: hidden;
         }
 
-        /* Цветовые пятна */
         .blob {
             position: absolute;
             border-radius: 50%;
@@ -58,45 +59,13 @@
             animation: float 10s infinite ease-in-out alternate;
         }
 
-        .blob-1 {
-            top: -10%;
-            left: -10%;
-            width: 60vw;
-            height: 60vw;
-            background: var(--blob-1);
-        }
+        .blob-1 { top: -10%; left: -10%; width: 60vw; height: 60vw; background: var(--blob-1); }
+        .blob-2 { bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: var(--blob-2); animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 40%; width: 30vw; height: 30vw; background: var(--blob-3); opacity: 0.4; animation-duration: 15s; }
 
-        .blob-2 {
-            bottom: -10%;
-            right: -10%;
-            width: 50vw;
-            height: 50vw;
-            background: var(--blob-2);
-            animation-delay: -5s;
-        }
-
-        .blob-3 {
-            top: 40%;
-            left: 40%;
-            width: 30vw;
-            height: 30vw;
-            background: var(--blob-3);
-            opacity: 0.4;
-            animation-duration: 15s;
-        }
-
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(20px, -20px) scale(1.05); }
-        }
-
-        /* Сетка поверх фона для текстуры (техно-стиль) */
         .grid-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
@@ -106,6 +75,11 @@
             -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
         }
 
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(20px, -20px) scale(1.05); }
+        }
+
         /* --- Основная карточка --- */
         .glass-container {
             position: relative;
@@ -113,29 +87,45 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            padding: 4rem 3rem;
+            padding: 3.5rem 3rem;
             border-radius: 24px;
             width: 90%;
             max-width: 500px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1.2rem;
+            z-index: 10;
         }
 
-        /* Индикатор работы */
-        .loader-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #fff;
-            animation: spin 1s linear infinite;
+        /* Мигающий индикатор */
+        .status-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 0.5rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--status-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--status-color);
+            animation: blink 2s infinite ease-in-out;
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.9); }
         }
 
         h1 {
@@ -145,32 +135,115 @@
             line-height: 1.2;
         }
 
-        /* Текстовый блок */
         .message-content {
             font-size: 1.05rem;
-            line-height: 1.8; /* Увеличенный межстрочный интервал */
-            color: var(--text-muted); /* Весь текст серый */
+            line-height: 1.8;
+            color: var(--text-muted);
             font-weight: 400;
         }
 
-        /* Отступы между абзацами (как Enter) */
-        .message-content p {
-            margin-bottom: 0.8rem; 
+        .message-content p { margin-bottom: 0.8rem; }
+        .message-content p:last-child { margin-bottom: 0; }
+
+        /* --- Кнопка разработчика --- */
+        .dev-btn-wrapper {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
         }
 
-        /* Убираем отступ у последнего */
-        .message-content p:last-child {
-            margin-bottom: 0;
+        .btn-dev {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        /* Адаптив */
+        .btn-dev:hover {
+            color: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- МОДАЛЬНОЕ ОКНО --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: #111118;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 16px;
+            width: 300px;
+            transform: translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+        }
+
+        .modal-input:focus {
+            border-color: #3b82f6;
+        }
+
+        .modal-close {
+            margin-top: 0.5rem;
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .modal-close:hover { color: #fff; }
+
         @media (max-width: 600px) {
-            .glass-container {
-                padding: 2.5rem 2rem;
-            }
-            h1 {
-                font-size: 1.75rem;
-            }
+            .glass-container { padding: 2.5rem 2rem; }
+            h1 { font-size: 1.75rem; }
         }
     </style>
 </head>
@@ -184,7 +257,11 @@
     </div>
 
     <div class="glass-container">
-        <div class="loader-icon"></div>
+        
+        <div class="status-wrapper">
+            <div class="status-dot"></div>
+            <span class="status-text">System Maintenance</span>
+        </div>
 
         <h1>Технический перерыв</h1>
         
@@ -194,7 +271,61 @@
             <p>Мы сейчас работаем над проблемами.</p>
             <p>Так что возвращайся позже.</p>
         </div>
+
+        <div class="dev-btn-wrapper">
+            <button class="btn-dev" onclick="openDevModal()">Я разработчик</button>
+        </div>
     </div>
 
+    <div class="modal-overlay" id="devModal">
+        <div class="modal-card">
+            <div class="modal-title">Terminal Access</div>
+            <input type="password" id="devCode" class="modal-input" placeholder="****" maxlength="4" oninput="checkCode()">
+            <button class="modal-close" onclick="closeDevModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('devModal');
+        const input = document.getElementById('devCode');
+
+        function openDevModal() {
+            modal.classList.add('active');
+            setTimeout(() => input.focus(), 100);
+        }
+
+        function closeDevModal() {
+            modal.classList.remove('active');
+            input.value = ''; 
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeDevModal();
+        });
+
+        function checkCode() {
+            const val = input.value;
+            if (val.length < 4) return;
+
+            const num = parseInt(val);
+            if (!isNaN(num)) {
+                // Код 1237 зашифрован
+                if ((num * 7) - 111 === 8548) {
+                    input.style.borderColor = '#22c55e';
+                    input.style.color = '#22c55e';
+                    
+                    setTimeout(() => {
+                        // Вот твоя ссылка, в точности как ты просил:
+                        window.location.href = 'https://golkatok.github.io/app/index1 НЕ ЗАБУДЬ ПОМЕНЯТЬ НАЗВАНИЕ.html';
+                    }, 500);
+                } else {
+                    if (val.length === 4) {
+                        input.style.borderColor = '#ef4444';
+                        setTimeout(() => input.style.borderColor = 'rgba(255,255,255,0.1)', 1000);
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>
