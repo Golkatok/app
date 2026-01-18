@@ -2,330 +2,3060 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Технический перерыв</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Jahvir App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* --- Настройки и Цвета --- */
-        :root {
-            --bg-deep: #050511;
-            --blob-1: #4c1d95;
-            --blob-2: #1e3a8a;
-            --blob-3: #be123c;
-            
-            --glass-bg: rgba(20, 20, 30, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-main: #ffffff;
-            --text-muted: #9CA3AF;
-            --status-color: #fbbf24;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        a, button, img {
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            pointer-events: auto;
+        }
+
+        img {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .social-btn, .video-card, .tab-item, .settings-toggle {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text-primary: #000000;
+            --text-secondary: #6e6e73;
+            --accent: #007aff;
+            --card-bg: #ffffff;
+            --border: #d2d2d7;
+            --notch-padding: env(safe-area-inset-top, 20px);
+            --ai-bg: #f0f7ff;
+            --ai-user-bg: #007aff;
+            --ai-user-text: #ffffff;
+            --ai-bot-bg: #f5f5f7;
+            --ai-bot-text: #000000;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-deep);
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            color: var(--text-main);
-            position: relative;
+            font-family: 'Inter', 'Manrope', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+            padding-top: var(--notch-padding);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* --- Фон --- */
-        .background-fx {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: var(--bg-deep);
-            overflow: hidden;
+        body.dark {
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --text-primary: #ffffff;
+            --text-secondary: #98989d;
+            --accent: #0a84ff;
+            --card-bg: #1c1c1e;
+            --border: #38383a;
+            --ai-bg: #1a1a2e;
+            --ai-user-bg: #0a84ff;
+            --ai-user-text: #ffffff;
+            --ai-bot-bg: #2d2d3a;
+            --ai-bot-text: #ffffff;
         }
 
-        .blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.6;
-            animation: float 10s infinite ease-in-out alternate;
+        body.light {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text-primary: #000000;
+            --text-secondary: #6e6e73;
+            --accent: #007aff;
+            --card-bg: #ffffff;
+            --border: #d2d2d7;
+            --ai-bg: #f0f7ff;
+            --ai-user-bg: #007aff;
+            --ai-user-text: #ffffff;
+            --ai-bot-bg: #f5f5f7;
+            --ai-bot-text: #000000;
         }
 
-        .blob-1 { top: -10%; left: -10%; width: 60vw; height: 60vw; background: var(--blob-1); }
-        .blob-2 { bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: var(--blob-2); animation-delay: -5s; }
-        .blob-3 { top: 40%; left: 40%; width: 30vw; height: 30vw; background: var(--blob-3); opacity: 0.4; animation-duration: 15s; }
-
-        .grid-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -1;
-            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        .container {
+            max-width: 100%;
+            padding: 0 20px 100px 20px;
+            min-height: 100vh;
+            padding-top: calc(var(--notch-padding) + 50px);
         }
 
-        @keyframes float {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(20px, -20px) scale(1.05); }
-        }
-
-        /* --- Основная карточка --- */
-        .glass-container {
-            position: relative;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            padding: 3.5rem 3rem;
-            border-radius: 24px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        .header {
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
-            z-index: 10;
+            align-items: center;
+            padding: 0 0 20px 0;
+            margin-bottom: 30px;
         }
 
-        /* Мигающий индикатор */
-        .status-wrapper {
+        .user-name {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        @media (min-width: 769px) {
+            .header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .user-name {
+                flex: 0;
+                margin-bottom: 0;
+                text-align: left;
+                order: 2;
+            }
+
+            .header-bottom {
+                width: 100%;
+                gap: 0;
+                order: unset;
+                display: contents;
+            }
+
+            .avatar {
+                order: 1;
+            }
+
+            .settings-toggle {
+                order: 3;
+                margin-left: auto;
+            }
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 0.5rem;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            background-color: var(--status-color);
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
             border-radius: 50%;
-            box-shadow: 0 0 10px var(--status-color);
-            animation: blink 2s infinite ease-in-out;
         }
 
-        .status-text {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.9); }
-        }
-
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-        }
-
-        .message-content {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        .message-content p { margin-bottom: 0.8rem; }
-        .message-content p:last-child { margin-bottom: 0; }
-
-        /* --- Кнопка разработчика --- */
-        .dev-btn-wrapper {
-            margin-top: 1rem;
+        .settings-toggle {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-secondary);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
             display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .settings-toggle:hover {
+            background: var(--accent);
+            transform: rotate(30deg);
+        }
+
+        .settings-toggle:hover .settings-icon {
+            filter: brightness(0) invert(1);
+        }
+
+        .settings-icon {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .subscribers {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 5px;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .subscribers-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .video-card {
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .video-card:hover {
+            transform: scale(1.02);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: var(--bg-secondary);
+        }
+
+        .video-info {
+            padding: 15px;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .video-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .social-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .social-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-color: var(--accent);
+        }
+
+        .social-icon {
+            width: 48px;
+            height: 48px;
+        }
+
+        .social-name {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .construction {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .construction-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+        }
+
+        .construction-text {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .construction-subtext {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .color-verify {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .color-verify-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .color-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 350px;
+            margin: 0 auto 20px;
+        }
+
+        .color-btn {
+            aspect-ratio: 1;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .color-btn:active {
+            transform: scale(0.9);
+        }
+
+        .color-sequence-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            min-height: 50px;
+        }
+
+        .color-sequence-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .color-sequence-dots {
+            display: flex;
+            gap: 8px;
             justify-content: center;
         }
 
-        .btn-dev {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.3);
-            font-size: 0.8rem;
-            padding: 8px 16px;
-            border-radius: 20px;
+        .color-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+        }
+
+        .color-btn.green {
+            background: #34C759;
+            color: white;
+        }
+
+        .color-btn.pink {
+            background: #FF0090;
+            color: white;
+        }
+
+        .color-btn.yellow {
+            background: #FFCC00;
+            color: #000;
+        }
+
+        .color-btn.red {
+            background: #FF3B30;
+            color: white;
+        }
+
+        .color-btn.blue {
+            background: #007AFF;
+            color: white;
+        }
+
+        .color-btn.purple {
+            background: #AF52DE;
+            color: white;
+        }
+
+        .color-btn.orange {
+            background: #FF9500;
+            color: white;
+        }
+
+        .color-btn.cyan {
+            background: #5AC8FA;
+            color: white;
+        }
+
+        .color-btn.brown {
+            background: #A2845E;
+            color: white;
+        }
+
+        .posts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .post-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .btn-dev:hover {
-            color: rgba(255,255,255,0.8);
-            border-color: rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.05);
+        .post-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
-        /* --- МОДАЛЬНОЕ ОКНО --- */
-        .modal-overlay {
+        .post-item-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .post-item-content {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .add-post-btn {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
+            bottom: 90px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 30px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 300;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
             z-index: 999;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
         }
 
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: all;
+        .add-post-btn:hover {
+            transform: scale(1.1);
         }
 
-        .modal-card {
-            background: #111118;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 16px;
-            width: 300px;
-            transform: translateY(20px);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .post-form {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-primary:hover,
+        .btn-secondary:hover {
+            opacity: 0.8;
+        }
+
+        .debug-log {
+            position: fixed;
+            bottom: 100px;
+            left: 10px;
+            right: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            z-index: 9998;
+            display: none;
+        }
+
+        .debug-log.show {
+            display: block;
+        }
+
+        .debug-toggle {
+            position: fixed;
+            bottom: 100px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.7);
+            color: #0f0;
+            border: 1px solid #0f0;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 9999;
+            display: none;
+        }
+
+        .back-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 8px);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+        }
+
+        .tab-item {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
         }
 
-        .modal-overlay.active .modal-card {
-            transform: translateY(0);
+        .tab-item.active {
+            color: var(--accent);
         }
 
-        .modal-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #fff;
+        .tab-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .tab-label {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
             text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
         }
 
-        .modal-input {
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+            font-family: 'Space Grotesk', sans-serif;
+            position: relative;
+        }
+
+        .loading-logo::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            padding: 8px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 200%;
+            animation: glow 3s ease-in-out infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .loading-logo img {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 12px;
-            border-radius: 8px;
-            color: #fff;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 10px;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .loading-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Модальное окно полного поста */
+        .full-post-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1003;
+            padding: 20px;
+            overflow-y: auto;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .full-post-modal.active {
+            display: block;
+        }
+
+        .full-post-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 40px auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .full-post-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .full-post-close:hover {
+            background: var(--accent);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .full-post-image {
+            width: 100%;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .full-post-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.3;
+        }
+
+        .full-post-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .full-post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Стили для модального окна настроек (прикреплено к низу) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            margin: auto auto 0 auto;
+            padding: 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            border-radius: 20px 20px 0 0;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+            animation: slideUpFromBottom 0.3s ease;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @keyframes slideUpFromBottom {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--accent);
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Категории настроек */
+        .settings-category {
+            margin-bottom: 30px;
+        }
+
+        .settings-category h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .category-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-item span {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Стилизованный select */
+        .styled-select {
+            position: relative;
+            display: inline-block;
+            width: 160px;
+        }
+
+        .styled-select select {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            appearance: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .styled-select:hover select {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .styled-select::after {
+            content: '▼';
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        /* Стилизованные чекбоксы */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-custom {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: var(--bg-secondary);
+        }
+
+        .checkbox-container input:checked + .checkbox-custom {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .checkbox-container input:checked + .checkbox-custom::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .checkbox-container:hover .checkbox-custom {
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        /* Скрываем оригинальные чекбоксы */
+        .checkbox-container input[type="checkbox"] {
+            display: none;
+        }
+
+        /* Стили для переключателя (toggle switch) */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Стили для ИИ чата */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+            max-height: 600px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
             text-align: center;
-            font-family: monospace;
-            font-size: 1.2rem;
-            letter-spacing: 0.2em;
         }
 
-        .modal-input:focus {
-            border-color: #3b82f6;
+        .chat-header h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 5px;
         }
 
-        .modal-close {
-            margin-top: 0.5rem;
+        .chat-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            animation: messageAppear 0.3s ease;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--ai-user-bg);
+            color: var(--ai-user-text);
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: var(--ai-bot-bg);
+            color: var(--ai-bot-text);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-content {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-input-container {
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            resize: none;
+            max-height: 100px;
+            min-height: 44px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+            background: var(--accent);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 16px;
+            background: var(--ai-bot-bg);
+            border-radius: 18px;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .clear-chat-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-chat-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Блок кода в сообщении */
+        .code-block-in-message {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 0;
+            margin: 10px 0;
+            overflow: hidden;
+            border: 1px solid #333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .code-header-in-message {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #252526;
+            border-bottom: 1px solid #333;
+        }
+
+        .code-header-in-message h3 {
+            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .code-actions-in-message {
+            display: flex;
+            gap: 8px;
+        }
+
+        .code-btn-in-message {
             background: transparent;
             border: none;
-            color: #6b7280;
             cursor: pointer;
-            font-size: 0.9rem;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
-        
-        .modal-close:hover { color: #fff; }
 
-        @media (max-width: 600px) {
-            .glass-container { padding: 2.5rem 2rem; }
-            h1 { font-size: 1.75rem; }
+        .code-btn-in-message:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .code-btn-in-message img {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+
+        .code-content-in-message {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #1e1e1e;
+        }
+
+        .code-pre-in-message {
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: none;
+            background: transparent;
+            tab-size: 4;
+        }
+
+        /* Стили для подсветки синтаксиса в сообщении */
+        .code-keyword { color: #569cd6; }
+        .code-tag { color: #569cd6; }
+        .code-attribute { color: #9cdcfe; }
+        .code-value { color: #ce9178; }
+        .code-comment { color: #6a9955; }
+        .code-string { color: #ce9178; }
+        .code-number { color: #b5cea8; }
+        .code-function { color: #dcdcaa; }
+        .code-operator { color: #d4d4d4; }
+        .code-selector { color: #d7ba7d; }
+        .code-property { color: #9cdcfe; }
+        .code-punctuation { color: #d4d4d4; }
+
+        /* Toast-уведомления */
+        .toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            animation: toastShow 0.3s ease forwards;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        @keyframes toastShow {
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .toast.hide {
+            animation: toastHide 0.3s ease forwards;
+        }
+
+        @keyframes toastHide {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="background-fx">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-        <div class="grid-overlay"></div>
-    </div>
-
-    <div class="glass-container">
-        
-        <div class="status-wrapper">
-            <div class="status-dot"></div>
-            <span class="status-text">System Maintenance</span>
+    <!-- Экран загрузки -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo" id="loadingLogo">
+            <img src="" alt="Avatar">
         </div>
-
-        <h1>Технический перерыв</h1>
-        
-        <div class="message-content">
-            <p>Упс!</p>
-            <p>У нас сейчас технический перерыв.</p>
-            <p>Мы сейчас работаем над проблемами.</p>
-            <p>Так что возвращайся позже.</p>
-        </div>
-
-        <div class="dev-btn-wrapper">
-            <button class="btn-dev" onclick="openDevModal()">Я разработчик</button>
+        <div class="loading-text">Загрузка</div>
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="devModal">
-        <div class="modal-card">
-            <div class="modal-title">Terminal Access</div>
-            <input type="password" id="devCode" class="modal-input" placeholder="****" maxlength="4" oninput="checkCode()">
-            <button class="modal-close" onclick="closeDevModal()">Закрыть</button>
+    <!-- Модальное окно настроек -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Настройки</h2>
+                <span class="close-modal" onclick="closeSettings()">&times;</span>
+            </div>
+            <div class="modal-body">
+                
+                <!-- Категория 1: Кастомизация -->
+                <div class="settings-category">
+                    <h3><img src="png/brush.png" class="category-icon"> Кастомизация</h3>
+                    <div class="setting-item">
+                        <span>Тема интерфейса</span>
+                        <div class="styled-select">
+                            <select id="themeSelect" onchange="changeTheme(this.value)">
+                                <option value="auto">Авто (как в системе)</option>
+                                <option value="light">Светлая</option>
+                                <option value="dark">Тёмная</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <span>Видимые разделы</span>
+                        <div class="tab-visibility-controls">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="tabHome" checked onchange="toggleTabVisibility('home', this.checked)">
+                                <span class="checkbox-custom"></span>
+                                <span>Главная</span>
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="tabSocial" checked onchange="toggleTabVisibility('social', this.checked)">
+                                <span class="checkbox-custom"></span>
+                                <span>Соцсети</span>
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="tabPosts" checked onchange="toggleTabVisibility('posts', this.checked)">
+                                <span class="checkbox-custom"></span>
+                                <span>Посты</span>
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="tabAI" checked onchange="toggleTabVisibility('ai', this.checked)">
+                                <span class="checkbox-custom"></span>
+                                <span>JahvirAI</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Категория 2: Для разработчиков -->
+                <div id="devCategory" class="settings-category" style="display: none;">
+                    <h3><img src="png/code.png" class="category-icon"> Для разработчиков</h3>
+                    <div class="setting-item">
+                        <span>Показать кнопку отладки (Debug)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="debugToggle" onchange="toggleDebugButton(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>Админ-панель постов</span>
+                        <button class="btn-primary" onclick="showColorVerify()" style="padding: 8px 16px;">Активировать</button>
+                    </div>
+                    <div class="setting-item" style="border-bottom: none;">
+                        <span>Текущий пользователь:</span>
+                        <span style="font-weight: 700; color: var(--accent);">@<span id="currentUserDisplay"></span></span>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
+
+    <!-- Модальное окно полного поста -->
+    <div id="fullPostModal" class="full-post-modal">
+        <div class="full-post-content">
+            <div class="full-post-close" onclick="closeFullPost()">&times;</div>
+            <img id="fullPostImage" class="full-post-image" src="" alt="Post image" style="display: none;">
+            <div class="full-post-title" id="fullPostTitle"></div>
+            <div class="full-post-text" id="fullPostText"></div>
+            <div class="full-post-meta">
+                <span id="fullPostAuthor"></span>
+                <span id="fullPostDate"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Главная страница -->
+        <div class="page active" id="home">
+            <div class="header">
+                <div class="user-name" id="userName">Пользователь</div>
+                <div class="header-bottom">
+                    <div class="avatar" id="userAvatar">
+                        <img src="" alt="Avatar">
+                    </div>
+                    <div class="settings-toggle" onclick="openSettings()">
+                        <img src="png/settings.png" alt="Settings" class="settings-icon">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Подписчики YouTube</div>
+                <div class="subscribers" id="subscribers">
+                    <div class="spinner"></div>
+                </div>
+                <div class="subscribers-label">подписчиков</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Последнее видео</div>
+                <div id="latestVideo" class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Соцсети -->
+        <div class="page" id="social">
+            <div class="header">
+                <div class="user-name" id="userName2">Пользователь</div>
+                <div class="header-bottom">
+                    <div class="avatar" id="userAvatar2">
+                        <img src="" alt="Avatar">
+                    </div>
+                    <div class="settings-toggle" onclick="openSettings()">
+                        <img src="png/settings.png" alt="Settings" class="settings-icon">
+                    </div>
+                </div>
+            </div>
+
+            <div class="social-buttons">
+                <a href="https://discord.gg/hmhjNhfrMh" target="_blank" class="social-btn">
+                    <img src="png/discord.png" alt="Discord" class="social-icon">
+                    <div class="social-name">Discord</div>
+                </a>
+                <a href="https://www.youtube.com/@Jahvir" target="_blank" class="social-btn">
+                    <img src="png/youtube.png" alt="YouTube" class="social-icon">
+                    <div class="social-name">YouTube</div>
+                </a>
+                <a href="https://www.twitch.tv/davasik" target="_blank" class="social-btn">
+                    <img src="png/twitch.png" alt="Twitch" class="social-icon">
+                    <div class="social-name">Twitch</div>
+                </a>
+                <a href="https://t.me/davajahvir" target="_blank" class="social-btn">
+                    <img src="png/telegram.png" alt="Telegram" class="social-icon">
+                    <div class="social-name">Telegram</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Посты -->
+        <div class="page" id="posts">
+            <div class="header">
+                <div class="user-name" id="userName3">Пользователь</div>
+                <div class="header-bottom">
+                    <div class="avatar" id="userAvatar3">
+                        <img src="" alt="Avatar">
+                    </div>
+                    <div class="settings-toggle" onclick="openSettings()">
+                        <img src="png/settings.png" alt="Settings" class="settings-icon">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Публичные посты -->
+            <div id="postsPublic" class="posts-list">
+                <!-- Здесь будут отображаться посты для всех -->
+            </div>
+
+            <!-- Верификация для админов -->
+            <div id="colorVerify" class="color-verify" style="display: none;">
+                <div class="color-verify-title">Введите цветовой код</div>
+                <div class="color-buttons">
+                    <div class="color-btn blue" onclick="verifyColor('blue')"></div>
+                    <div class="color-btn green" onclick="verifyColor('green')"></div>
+                    <div class="color-btn orange" onclick="verifyColor('orange')"></div>
+                    <div class="color-btn pink" onclick="verifyColor('pink')"></div>
+                    <div class="color-btn red" onclick="verifyColor('red')"></div>
+                    <div class="color-btn purple" onclick="verifyColor('purple')"></div>
+                    <div class="color-btn cyan" onclick="verifyColor('cyan')"></div>
+                    <div class="color-btn yellow" onclick="verifyColor('yellow')"></div>
+                    <div class="color-btn brown" onclick="verifyColor('brown')"></div>
+                </div>
+                <div class="color-sequence-display">
+                    <div class="color-sequence-title">Ваша последовательность</div>
+                    <div class="color-sequence-dots" id="colorSequenceDots"></div>
+                </div>
+            </div>
+
+            <!-- Админ панель -->
+            <div id="adminPanel" class="admin-panel">
+                <button class="add-post-btn" onclick="togglePostForm()">+</button>
+                
+                <div id="postFormContainer" style="display: none;">
+                    <div class="post-form">
+                        <div class="form-group">
+                            <label>Заголовок</label>
+                            <input type="text" id="postTitle" placeholder="Название поста">
+                        </div>
+                        <div class="form-group">
+                            <label>Содержание</label>
+                            <textarea id="postContent" placeholder="Текст поста"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL изображения (необязательно)</label>
+                            <input type="text" id="postImage" placeholder="https://...">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-secondary" onclick="togglePostForm()">Отмена</button>
+                            <button class="btn-primary" onclick="savePost()">Опубликовать</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="adminPostsList" class="posts-list">
+                    <!-- Здесь будут посты с возможностью редактирования -->
+                </div>
+            </div>
+        </div>
+
+        <!-- JahvirAI -->
+        <div class="page" id="ai">
+            <div class="header">
+                <div class="user-name" id="userName4">Пользователь</div>
+                <div class="header-bottom">
+                    <div class="avatar" id="userAvatar4">
+                        <img src="" alt="Avatar">
+                    </div>
+                    <div class="settings-toggle" onclick="openSettings()">
+                        <img src="png/settings.png" alt="Settings" class="settings-icon">
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h3>JahvirAI</h3>
+                    <p>Твой персональный AI-ассистент</p>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Сообщения будут добавляться сюда -->
+                </div>
+                
+                <div class="chat-input-container">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Введите ваше сообщение..." 
+                        rows="1"
+                        onkeydown="handleChatInputKeydown(event)"
+                    ></textarea>
+                    <button class="send-button" id="sendButton" onclick="sendMessage()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <button class="clear-chat-btn" onclick="clearChat()">Очистить чат</button>
+        </div>
+    </div>
+
+    <!-- Таб-бар -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchPage('home')">
+            <img src="png/home.png" alt="Home" class="tab-icon">
+            <div class="tab-label">Главная</div>
+        </div>
+        <div class="tab-item" onclick="switchPage('social')">
+            <img src="png/social.png" alt="Social" class="tab-icon">
+            <div class="tab-label">Соцсети</div>
+        </div>
+        <div class="tab-item" onclick="switchPage('posts')">
+            <img src="png/posts.png" alt="Posts" class="tab-icon">
+            <div class="tab-label">Посты</div>
+        </div>
+        <div class="tab-item" onclick="switchPage('ai')">
+            <img src="png/jahvirai.png" alt="AI" class="tab-icon">
+            <div class="tab-label">JahvirAI</div>
+        </div>
+    </div>
+
+    <!-- Debug консоль -->
+    <button class="debug-toggle" onclick="toggleDebug()">🐛</button>
+    <div class="debug-log" id="debugLog"></div>
 
     <script>
-        const modal = document.getElementById('devModal');
-        const input = document.getElementById('devCode');
-
-        function openDevModal() {
-            modal.classList.add('active');
-            setTimeout(() => input.focus(), 100);
+        // Debug функции
+        function log(...args) {
+            console.log(...args);
+            const logEl = document.getElementById('debugLog');
+            const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+            logEl.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
         }
 
-        function closeDevModal() {
-            modal.classList.remove('active');
-            input.value = ''; 
+        function toggleDebug() {
+            document.getElementById('debugLog').classList.toggle('show');
+        }
+        
+        console.log('=== Script initialization ===');
+        log('=== App starting ===');
+        
+        // Инициализация Supabase
+        const SUPABASE_URL = 'https://wyhtxlfasssxunrdsviq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5aHR4bGZhc3NzeHVucmRzdmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NTEyNzcsImV4cCI6MjA4MzIyNzI3N30.LVoxX-hLG4s6dT4l5FtnF0LCQ8Pc5o1JHKZbRMNZXKU';
+        let supabase = null;
+        
+        // Загружаем Supabase динамически
+        let supabaseLoaded = false;
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload = () => {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseLoaded = true;
+            log('✅ Supabase loaded!');
+            console.log('✅ Supabase loaded and initialized');
+        };
+        script.onerror = () => {
+            log('❌ Supabase load failed');
+            console.error('❌ Failed to load Supabase');
+        };
+        document.head.appendChild(script);
+        
+        // Инициализация Telegram WebApp
+        let tg = null;
+        let userDataLoaded = false;
+        let userFirstName = '';
+        let userUsername = '';
+
+        function initTelegram() {
+            console.log('Initializing Telegram WebApp...');
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                
+                console.log('Telegram WebApp ready');
+                console.log('Platform:', tg.platform);
+                console.log('Version:', tg.version);
+                console.log('initData:', tg.initData);
+                console.log('initDataUnsafe:', tg.initDataUnsafe);
+                
+                // Применяем тему из Telegram
+                if (tg.colorScheme === 'dark') {
+                    document.body.classList.add('dark');
+                    updateThemeIcons(true);
+                }
+                
+                return true;
+            } else {
+                console.log('Telegram WebApp not available');
+                return false;
+            }
         }
 
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeDevModal();
-        });
-
-        function checkCode() {
-            const val = input.value;
-            if (val.length < 4) return;
-
-            const num = parseInt(val);
-            if (!isNaN(num)) {
-                // Код 1237 зашифрован
-                if ((num * 7) - 111 === 8548) {
-                    input.style.borderColor = '#22c55e';
-                    input.style.color = '#22c55e';
-                    
-                    setTimeout(() => {
-                        // Вот твоя ссылка, в точности как ты просил:
-                        window.location.href = 'https://golkatok.github.io/app/index1 НЕ ЗАБУДЬ ПОМЕНЯТЬ НАЗВАНИЕ.html';
-                    }, 500);
-                } else {
-                    if (val.length === 4) {
-                        input.style.borderColor = '#ef4444';
-                        setTimeout(() => input.style.borderColor = 'rgba(255,255,255,0.1)', 1000);
+        function updateUserData() {
+            if (!tg) return false;
+            
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const user = tg.initDataUnsafe.user;
+                
+                console.log('=== User Data ===');
+                console.log('User ID:', user.id);
+                console.log('First name:', user.first_name);
+                console.log('Last name:', user.last_name);
+                console.log('Username:', user.username);
+                console.log('Language:', user.language_code);
+                console.log('Photo URL:', user.photo_url);
+                
+                // Сохраняем данные пользователя
+                userFirstName = user.first_name || '';
+                userUsername = user.username || '';
+                
+                // Обновляем имя пользователя в интерфейсе
+                const fullName = `${userFirstName} ${user.last_name || ''}`.trim() || 'Пользователь';
+                
+                const userNames = [
+                    document.getElementById('userName'),
+                    document.getElementById('userName2'),
+                    document.getElementById('userName3'),
+                    document.getElementById('userName4')
+                ];
+                
+                userNames.forEach(nameEl => {
+                    if (nameEl) {
+                        nameEl.textContent = fullName;
                     }
+                });
+                
+                if (user.photo_url) {
+                    console.log('✅ Photo URL found, updating avatars...');
+                    
+                    const avatarImgs = [
+                        document.querySelector('#loadingLogo img'),
+                        document.querySelector('#userAvatar img'),
+                        document.querySelector('#userAvatar2 img'),
+                        document.querySelector('#userAvatar3 img'),
+                        document.querySelector('#userAvatar4 img')
+                    ];
+                    
+                    avatarImgs.forEach((img, index) => {
+                        if (img) {
+                            img.src = user.photo_url;
+                            console.log(`Updated avatar ${index + 1}`);
+                        }
+                    });
+                    
+                    userDataLoaded = true;
+                    return true;
+                } else {
+                    console.log('⚠️ Photo URL not available');
+                    console.log('Note: photo_url requires Mini App to be launched from attachment menu');
+                }
+            } else {
+                console.log('❌ No user data available');
+            }
+            
+            return false;
+        }
+
+        // Скрыть экран загрузки
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }, 800);
+        }
+
+        // === ФУНКЦИИ ДЛЯ НАСТРОЕК ===
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            
+            // Проверяем, разработчик ли пользователь
+            if (ADMIN_USERNAMES.includes(currentUsername)) {
+                document.getElementById('devCategory').style.display = 'block';
+            } else {
+                document.getElementById('devCategory').style.display = 'none';
+            }
+            
+            // Отображаем текущего пользователя
+            document.getElementById('currentUserDisplay').textContent = currentUsername || 'неизвестен';
+            
+            // Загружаем сохраненные настройки
+            loadUserSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function changeTheme(theme) {
+            // Удаляем старые классы тем
+            document.body.classList.remove('light', 'dark');
+            
+            if (theme === 'auto') {
+                // Определяем тему системы
+                const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.body.classList.add(isSystemDark ? 'dark' : 'light');
+                localStorage.setItem('theme', 'auto');
+            } else {
+                document.body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            // Обновляем глобальную переменную и иконки
+            updateThemeIcons(document.body.classList.contains('dark'));
+        }
+
+        function toggleDebugButton(isVisible) {
+            const debugBtn = document.querySelector('.debug-toggle');
+            debugBtn.style.display = isVisible ? 'block' : 'none';
+            localStorage.setItem('debugVisible', isVisible);
+        }
+
+        function toggleTabVisibility(tabId, isVisible) {
+            const tabItems = document.querySelectorAll('.tab-item');
+            tabItems.forEach(tab => {
+                if (tab.onclick && tab.onclick.toString().includes(tabId)) {
+                    tab.style.display = isVisible ? 'flex' : 'none';
+                }
+            });
+            localStorage.setItem(`tab_${tabId}`, isVisible);
+        }
+
+        function loadUserSettings() {
+            // Загрузка темы
+            const savedTheme = localStorage.getItem('theme') || 'auto';
+            document.getElementById('themeSelect').value = savedTheme;
+            changeTheme(savedTheme);
+            
+            // Загрузка видимости дебаг-кнопки
+            const debugVisible = localStorage.getItem('debugVisible') === 'true';
+            document.getElementById('debugToggle').checked = debugVisible;
+            toggleDebugButton(debugVisible);
+            
+            // Загрузка видимости вкладок
+            const tabs = ['home', 'social', 'posts', 'ai'];
+            tabs.forEach(tabId => {
+                const isVisible = localStorage.getItem(`tab_${tabId}`) !== 'false';
+                document.getElementById(`tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).checked = isVisible;
+                toggleTabVisibility(tabId, isVisible);
+            });
+        }
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            const fullPostModal = document.getElementById('fullPostModal');
+            
+            if (event.target == modal) {
+                closeSettings();
+            }
+            if (event.target == fullPostModal) {
+                closeFullPost();
+            }
+        }
+
+        // Обновление иконок темы
+        function updateThemeIcons(isDark) {
+            const iconFolder = isDark ? 'pngdark' : 'png';
+            
+            // Обновляем основные иконки
+            const icons = {
+                settings: '.settings-icon',
+                home: '.tab-icon[alt="Home"]',
+                social: '.tab-icon[alt="Social"]',
+                posts: '.tab-icon[alt="Posts"]',
+                jahvirai: '.tab-icon[alt="AI"]',
+                brush: '.category-icon[src*="brush"]',
+                code: '.category-icon[src*="code"]'
+            };
+            
+            Object.entries(icons).forEach(([name, selector]) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.src = `${iconFolder}/${name}.png`;
+                }
+            });
+            
+            // Обновляем социальные иконки
+            const socialIcons = document.querySelectorAll('.social-icon');
+            const socialNames = ['discord', 'youtube', 'twitch', 'telegram'];
+            socialIcons.forEach((icon, index) => {
+                if (socialNames[index]) {
+                    icon.src = `${iconFolder}/${socialNames[index]}.png`;
+                }
+            });
+            
+            // Обновляем construction иконки
+            document.querySelectorAll('.construction-icon').forEach(icon => {
+                if (icon.src.includes('jahvirai')) {
+                    icon.src = `${iconFolder}/jahvirai.png`;
+                } else {
+                    icon.src = `${iconFolder}/indevelop.png`;
+                }
+            });
+        }
+
+        // Загрузка сохраненной темы
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+            updateThemeIcons(true);
+        } else if (savedTheme === 'light') {
+            document.body.classList.add('light');
+            updateThemeIcons(false);
+        } else if (savedTheme === 'auto') {
+            const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.body.classList.add(isSystemDark ? 'dark' : 'light');
+            updateThemeIcons(isSystemDark);
+        }
+
+        // Переключение страниц
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(pageId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            // Автофокус на поле ввода чата при переходе на страницу ИИ
+            if (pageId === 'ai') {
+                setTimeout(() => {
+                    document.getElementById('chatInput').focus();
+                }, 100);
+            }
+        }
+
+        // YouTube API
+        const YOUTUBE_API_KEY = 'AIzaSyDrkWy7DEmVOZcjY34GFcJxRW-8LEM-aJc';
+        const CHANNEL_ID = 'UCrZA2Mj6yKZkEcBIqdfF6Ag';
+
+        async function loadYouTubeData() {
+            try {
+                const channelResponse = await fetch(
+                    `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${CHANNEL_ID}&key=${YOUTUBE_API_KEY}`
+                );
+                const channelData = await channelResponse.json();
+                
+                if (channelData.items && channelData.items[0]) {
+                    const subs = parseInt(channelData.items[0].statistics.subscriberCount);
+                    document.getElementById('subscribers').textContent = subs.toLocaleString('ru-RU');
+                }
+
+                const videosResponse = await fetch(
+                    `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&order=date&maxResults=20&type=video&key=${YOUTUBE_API_KEY}`
+                );
+                const videosData = await videosResponse.json();
+                
+                if (videosData.items) {
+                    for (let video of videosData.items) {
+                        const videoId = video.id.videoId;
+                        
+                        const videoDetailsResponse = await fetch(
+                            `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`
+                        );
+                        const videoDetails = await videoDetailsResponse.json();
+                        
+                        if (videoDetails.items && videoDetails.items[0]) {
+                            const thumbnails = videoDetails.items[0].snippet.thumbnails;
+                            const highThumb = thumbnails.high || thumbnails.medium || thumbnails.default;
+                            
+                            if (highThumb && highThumb.width > highThumb.height) {
+                                const videoHtml = `
+                                    <div class="video-card" onclick="window.open('https://youtube.com/watch?v=${videoId}', '_blank')">
+                                        <img class="video-thumbnail" src="${highThumb.url}" alt="Video thumbnail">
+                                        <div class="video-info">
+                                            <div class="video-title">${video.snippet.title}</div>
+                                            <div class="video-date">${new Date(video.snippet.publishedAt).toLocaleDateString('ru-RU')}</div>
+                                        </div>
+                                    </div>
+                                `;
+                                document.getElementById('latestVideo').innerHTML = videoHtml;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (document.getElementById('latestVideo').innerHTML.includes('spinner')) {
+                        document.getElementById('latestVideo').innerHTML = '<div class="video-info"><div class="video-title">Горизонтальные видео не найдены</div></div>';
+                    }
+                }
+            } catch (error) {
+                console.error('YouTube API error:', error);
+                document.getElementById('subscribers').textContent = '---';
+                document.getElementById('latestVideo').innerHTML = '<div class="video-info"><div class="video-title">Не удалось загрузить видео</div><div class="video-date">Проверьте настройки API</div></div>';
+            } finally {
+                hideLoadingScreen();
+            }
+        }
+
+        // Система постов
+        const ADMIN_USERNAMES = ['golka_tok', 'David3153'];
+        const COLOR_CODE = ['green', 'pink', 'yellow', 'red'];
+        let currentColorSequence = [];
+        let isAdminVerified = false;
+        let currentUsername = '';
+
+        function checkPostsAccess() {
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                currentUsername = tg.initDataUnsafe.user.username || '';
+                console.log('User:', currentUsername);
+                
+                // Всегда загружаем публичные посты
+                loadPublicPosts();
+            } else {
+                loadPublicPosts();
+            }
+        }
+
+        // Функции для открытия/закрытия полного поста
+        function openFullPost(post) {
+            const modal = document.getElementById('fullPostModal');
+            const image = document.getElementById('fullPostImage');
+            const title = document.getElementById('fullPostTitle');
+            const text = document.getElementById('fullPostText');
+            const author = document.getElementById('fullPostAuthor');
+            const date = document.getElementById('fullPostDate');
+            
+            // Устанавливаем данные
+            title.textContent = post.title;
+            text.textContent = post.content;
+            author.textContent = `@${post.author}`;
+            date.textContent = new Date(post.created_at).toLocaleDateString('ru-RU');
+            
+            // Устанавливаем изображение если есть
+            if (post.image_url) {
+                image.src = post.image_url;
+                image.style.display = 'block';
+            } else {
+                image.style.display = 'none';
+            }
+            
+            // Показываем модальное окно
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFullPost() {
+            const modal = document.getElementById('fullPostModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showColorVerify() {
+            document.getElementById('colorVerify').style.display = 'block';
+            document.getElementById('postsPublic').style.display = 'none';
+            document.getElementById('adminPanel').classList.remove('active');
+            closeSettings();
+        }
+
+        function verifyColor(color) {
+            currentColorSequence.push(color);
+            
+            const colorMap = {
+                'green': '#34C759',
+                'pink': '#FF0090',
+                'yellow': '#FFCC00',
+                'red': '#FF3B30',
+                'blue': '#007AFF',
+                'purple': '#AF52DE',
+                'orange': '#FF9500',
+                'cyan': '#5AC8FA',
+                'brown': '#A2845E'
+            };
+            
+            const dotsContainer = document.getElementById('colorSequenceDots');
+            dotsContainer.innerHTML = currentColorSequence.map(c => 
+                `<div class="color-dot" style="background: ${colorMap[c]}; border-color: ${colorMap[c]};"></div>`
+            ).join('');
+            
+            console.log('Current sequence:', currentColorSequence);
+            console.log('Expected:', COLOR_CODE);
+            
+            if (currentColorSequence.length === COLOR_CODE.length) {
+                if (JSON.stringify(currentColorSequence) === JSON.stringify(COLOR_CODE)) {
+                    console.log('✅ Color code correct!');
+                    isAdminVerified = true;
+                    document.getElementById('colorVerify').style.display = 'none';
+                    document.getElementById('adminPanel').classList.add('active');
+                    loadAdminPosts();
+                } else {
+                    console.log('❌ Color code incorrect');
+                    alert('Неверный код! Попробуйте снова.');
+                    currentColorSequence = [];
+                    dotsContainer.innerHTML = '';
                 }
             }
         }
+
+        function togglePostForm() {
+            const form = document.getElementById('postFormContainer');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            
+            if (form.style.display === 'none') {
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postImage').value = '';
+            }
+        }
+
+        async function savePost() {
+            log('=== Saving post ===');
+            
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            const imageUrl = document.getElementById('postImage').value.trim();
+            
+            if (!title || !content) {
+                alert('Заполните заголовок и содержание!');
+                return;
+            }
+            
+            const postData = {
+                title: title,
+                content: content,
+                image_url: imageUrl || null,
+                author: currentUsername,
+                published: true
+            };
+            
+            log('Post data:', postData);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(postData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log('❌ Error:', data);
+                    throw new Error(data.message || 'Failed to save post');
+                }
+                
+                log('✅ Post saved!', data);
+                alert('Пост опубликован! ✅');
+                
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postImage').value = '';
+                
+                togglePostForm();
+                loadAdminPosts();
+                loadPublicPosts();
+                
+            } catch (error) {
+                log('❌ Error:', error.message);
+                alert('Ошибка: ' + error.message);
+            }
+        }
+
+        async function loadPublicPosts() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/posts?published=eq.true&order=created_at.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                const posts = await response.json();
+                
+                const container = document.getElementById('postsPublic');
+                
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = `
+                        <div class="construction">
+                            <img src="png/indevelop.png" alt="Posts" class="construction-icon">
+                            <div class="construction-text">Постов пока нет</div>
+                            <div class="construction-subtext">Скоро здесь появятся интересные материалы!</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = posts.map(post => `
+                    <div class="post-item" onclick="openFullPost(${JSON.stringify(post).replace(/"/g, '&quot;')})">
+                        ${post.image_url ? `<img src="${post.image_url}" style="width:100%;border-radius:10px;margin-bottom:10px;" alt="Post image">` : ''}
+                        <div class="post-item-title">${post.title}</div>
+                        <div class="post-item-content">${post.content}</div>
+                        <div class="post-item-meta">
+                            <span>@${post.author}</span>
+                            <span>${new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                log('Error loading posts:', error.message);
+                document.getElementById('postsPublic').innerHTML = `
+                    <div class="construction">
+                        <img src="png/indevelop.png" alt="Error" class="construction-icon">
+                        <div class="construction-text">Ошибка загрузки</div>
+                        <div class="construction-subtext">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadAdminPosts() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/posts?order=created_at.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                const posts = await response.json();
+                
+                const container = document.getElementById('adminPostsList');
+                
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            Нет постов. Создайте первый! 📝
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = posts.map(post => `
+                    <div class="post-item">
+                        ${post.image_url ? `<img src="${post.image_url}" style="width:100%;border-radius:10px;margin-bottom:10px;" alt="Post image">` : ''}
+                        <div class="post-item-title">${post.title}</div>
+                        <div class="post-item-content">${post.content}</div>
+                        <div class="post-item-meta">
+                            <span>@${post.author}</span>
+                            <span>${new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
+                            <span>${post.published ? '✅ Опубликован' : '📝 Черновик'}</span>
+                        </div>
+                        <div style="margin-top:10px;display:flex;gap:10px;">
+                            <button class="btn-secondary" onclick="deletePost('${post.id}')" style="padding:8px 16px;">Удалить</button>
+                            <button class="btn-primary" onclick="togglePublishPost('${post.id}', ${!post.published})" style="padding:8px 16px;">
+                                ${post.published ? 'В черновик' : 'Опубликовать'}
+                            </button>
+                            <button class="btn-primary" onclick="openFullPost(${JSON.stringify(post).replace(/"/g, '&quot;')})" style="padding:8px 16px;">Просмотр</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                log('Error loading admin posts:', error.message);
+            }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm('Удалить этот пост?')) return;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${postId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete');
+                
+                log('✅ Post deleted');
+                alert('Пост удалён! ✅');
+                loadAdminPosts();
+                loadPublicPosts();
+                
+            } catch (error) {
+                log('❌ Error:', error.message);
+                alert('Ошибка при удалении: ' + error.message);
+            }
+        }
+
+        async function togglePublishPost(postId, publish) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${postId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ published: publish })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update');
+                
+                log(`✅ Post ${publish ? 'published' : 'unpublished'}`);
+                alert(`Пост ${publish ? 'опубликован' : 'перемещен в черновик'}! ✅`);
+                loadAdminPosts();
+                loadPublicPosts();
+                
+            } catch (error) {
+                log('❌ Error:', error.message);
+                alert('Ошибка: ' + error.message);
+            }
+        }
+
+        // === ИИ ЧАТ ФУНКЦИИ ===
+        const AI_MODEL = 'gemma-3-4b-it';
+        let aiApiKeys = [];
+        let currentKeyIndex = 0;
+        let chatHistory = [];
+        
+        // Функция для загрузки ключей AI из Supabase
+        async function loadAiApiKeys() {
+            try {
+                log('🔄 Загрузка API ключей из Supabase...');
+                
+                // Загружаем все ключи AI из таблицы app_secrets
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/app_secrets?key_name=like.ai_api_key_%`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load API keys: ${response.status}`);
+                }
+                
+                const secrets = await response.json();
+                
+                // Извлекаем ключи
+                aiApiKeys = secrets.map(secret => secret.key_value);
+                
+                if (aiApiKeys.length === 0) {
+                    log('⚠️ No AI API keys found in Supabase');
+                    // Используем резервный ключ (можно убрать в продакшене)
+                    aiApiKeys = [
+                        'AIzaSyDkdk-78oAGIbbfXHnthIaWtNkJL52_Eyg',
+                        'AIzaSyDFepQImt6jCHKybyYE14O_xf-8r3gbU-I',
+                        'AIzaSyDu8XOqXSsGPENBDVuGSjzW71HpQDbFpFM'
+                    ];
+                }
+                
+                log(`✅ Загружено ${aiApiKeys.length} API ключей из Supabase`);
+                console.log(`🔑 Загружено ${aiApiKeys.length} AI API ключей`);
+                
+                return true;
+            } catch (error) {
+                log('❌ Ошибка загрузки API ключей:', error.message);
+                
+                // Резервный вариант на случай ошибки
+                aiApiKeys = [
+                    'AIzaSyDkdk-78oAGIbbfXHnthIaWtNkJL52_Eyg',
+                    'AIzaSyDFepQImt6jCHKybyYE14O_xf-8r3gbU-I',
+                    'AIzaSyDu8XOqXSsGPENBDVuGSjzW71HpQDbFpFM'
+                ];
+                
+                console.log('⚠️ Используются резервные API ключи');
+                return false;
+            }
+        }
+        
+        // Функция для получения текущего ключа
+        function getCurrentApiKey() {
+            if (aiApiKeys.length === 0) {
+                throw new Error('No API keys available');
+            }
+            return aiApiKeys[currentKeyIndex];
+        }
+        
+        // Функция для переключения на следующий ключ при ошибке
+        function rotateApiKey() {
+            if (aiApiKeys.length <= 1) return;
+            currentKeyIndex = (currentKeyIndex + 1) % aiApiKeys.length;
+            console.log(`🔄 Переключение на ключ #${currentKeyIndex + 1}`);
+            log(`🔄 API Key rotated to index: ${currentKeyIndex}`);
+        }
+        
+        // Функция для отправки запроса с ротацией ключей
+        async function makeAiRequest(data) {
+            if (aiApiKeys.length === 0) {
+                await loadAiApiKeys();
+            }
+            
+            let lastError;
+            
+            // Пробуем все ключи по очереди
+            for (let i = 0; i < aiApiKeys.length; i++) {
+                const currentKey = getCurrentApiKey();
+                try {
+                    log(`Попытка с ключом #${currentKeyIndex + 1}`);
+                    
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${currentKey}`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        }
+                    );
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        log(`❌ Ошибка API (статус ${response.status}): ${errorText}`);
+                        
+                        // Если ошибка 429 (Too Many Requests) или 403 (Forbidden), пробуем следующий ключ
+                        if (response.status === 429 || response.status === 403) {
+                            lastError = new Error(`Лимит ключа #${currentKeyIndex + 1} исчерпан`);
+                            rotateApiKey();
+                            continue; // Пробуем следующий ключ
+                        } else {
+                            // Для других ошибок выбрасываем исключение
+                            throw new Error(`API error: ${response.status} - ${errorText}`);
+                        }
+                    }
+                    
+                    const result = await response.json();
+                    log(`✅ Успешный ответ от ключа #${currentKeyIndex + 1}`);
+                    return result;
+                    
+                } catch (error) {
+                    lastError = error;
+                    log(`❌ Ошибка с ключом #${currentKeyIndex + 1}: ${error.message}`);
+                    
+                    // Если это не последний ключ, пробуем следующий
+                    if (i < aiApiKeys.length - 1) {
+                        rotateApiKey();
+                    }
+                }
+            }
+            
+            // Если все ключи не сработали
+            throw lastError || new Error('Все API ключи исчерпаны. Попробуйте позже.');
+        }
+        
+        function addMessageToChat(message, isUser = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            const time = new Date().toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${message}</div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatMessages = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // === ФУНКЦИИ ДЛЯ РАБОТЫ С КОДОМ В СООБЩЕНИЯХ ===
+        
+        // Функция для подсветки синтаксиса HTML
+        function highlightHTML(code) {
+            return code
+                // Комментарии
+                .replace(/&lt;!--[\s\S]*?--&gt;/g, '<span class="code-comment">$&</span>')
+                // Теги
+                .replace(/&lt;\/?([a-zA-Z][a-zA-Z0-9]*)/g, '<span class="code-tag">$&</span>')
+                // Атрибуты
+                .replace(/\s([a-zA-Z-]+)=/g, ' <span class="code-attribute">$1</span>=')
+                // Значения атрибутов в кавычках
+                .replace(/="([^"]*)"/g, '="<span class="code-value">$1</span>"')
+                .replace(/'([^']*)'/g, "'<span class=\"code-value\">$1</span>'")
+                // Ключевые слова
+                .replace(/\b(function|var|let|const|if|else|for|while|return|class|export|import)\b/g, '<span class="code-keyword">$1</span>')
+                // Строки
+                .replace(/`([^`]*)`/g, '<span class="code-string">`$1`</span>')
+                // CSS селекторы
+                .replace(/(\.|#)([a-zA-Z][a-zA-Z0-9_-]*)/g, '$1<span class="code-selector">$2</span>')
+                // CSS свойства
+                .replace(/([a-zA-Z-]+):/g, '<span class="code-property">$1</span>:')
+                // Числа
+                .replace(/\b(\d+)\b/g, '<span class="code-number">$1</span>');
+        }
+
+        // Создание блока кода для вставки в сообщение
+        function createCodeBlockInMessage(code) {
+            // Экранируем HTML для безопасного отображения
+            const escapedCode = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            
+            // Применяем подсветку синтаксиса
+            const highlightedCode = highlightHTML(escapedCode);
+            
+            // Определяем тему для иконок
+            const isDark = document.body.classList.contains('dark');
+            const iconPath = isDark ? 'pngdark' : 'png';
+            
+            // Создаем HTML блока кода
+            return `
+                <div class="code-block-in-message">
+                    <div class="code-header-in-message">
+                        <h3>HTML Код</h3>
+                        <div class="code-actions-in-message">
+                            <button class="code-btn-in-message" onclick="copyCodeFromMessage(this)" title="Копировать">
+                                <img src="${iconPath}/copy.png" alt="Копировать">
+                            </button>
+                            <button class="code-btn-in-message" onclick="downloadCodeFromMessage(this)" title="Скачать">
+                                <img src="${iconPath}/save.png" alt="Скачать">
+                            </button>
+                        </div>
+                    </div>
+                    <div class="code-content-in-message">
+                        <pre class="code-pre-in-message" data-original-code="${code.replace(/"/g, '&quot;')}">${highlightedCode}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Показать toast-уведомление
+        function showToast(message, duration = 2000) {
+            // Удаляем старые toast
+            const oldToasts = document.querySelectorAll('.toast');
+            oldToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Автоматически скрываем toast через указанное время
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        // Копировать код из сообщения
+        function copyCodeFromMessage(button) {
+            const codeBlock = button.closest('.code-block-in-message');
+            const preElement = codeBlock.querySelector('.code-pre-in-message');
+            const originalCode = preElement.dataset.originalCode.replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+            
+            navigator.clipboard.writeText(originalCode).then(() => {
+                showToast('✅ Код скопирован в буфер обмена!');
+                
+                // Меняем иконку на короткое время
+                const img = button.querySelector('img');
+                const originalSrc = img.src;
+                img.src = originalSrc.includes('dark') ? 'pngdark/check.png' : 'png/check.png';
+                
+                setTimeout(() => {
+                    img.src = originalSrc;
+                }, 2000);
+                
+            }).catch(err => {
+                console.error('Ошибка при копировании:', err);
+                showToast('❌ Ошибка при копировании');
+            });
+        }
+
+        // Скачать код из сообщения
+        function downloadCodeFromMessage(button) {
+            const codeBlock = button.closest('.code-block-in-message');
+            const preElement = codeBlock.querySelector('.code-pre-in-message');
+            const originalCode = preElement.dataset.originalCode.replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+            
+            const blob = new Blob([originalCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            a.href = url;
+            a.download = 'code.html';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showToast('💾 Код сохранен как code.html');
+            
+            // Меняем иконку на короткое время
+            const img = button.querySelector('img');
+            const originalSrc = img.src;
+            img.src = originalSrc.includes('dark') ? 'pngdark/check.png' : 'png/check.png';
+            
+            setTimeout(() => {
+                img.src = originalSrc;
+            }, 2000);
+        }
+
+        // Обработка сообщений с кодом
+        function processAICodeResponse(response) {
+            // Ищем HTML код в ответе
+            const htmlRegex = /<html[\s\S]*?>[\s\S]*?<\/html>/i;
+            const match = response.match(htmlRegex);
+            
+            if (match) {
+                // Если найден HTML код, создаем блок кода
+                const htmlCode = match[0];
+                const codeBlock = createCodeBlockInMessage(htmlCode);
+                
+                // Возвращаем сообщение с блоком кода вместо оригинального кода
+                return response.replace(htmlRegex, `<div style="margin: 10px 0;">${codeBlock}</div>`);
+            }
+            
+            return response;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const button = document.getElementById('sendButton');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Отключаем кнопку и очищаем поле ввода
+            button.disabled = true;
+            addMessageToChat(message, true);
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Показываем индикатор набора
+            showTypingIndicator();
+            
+            try {
+                // Создаем персонализированный промпт для JahvirAI
+                const userGreeting = userFirstName ? 
+                    `Пользователя зовут ${userFirstName}. Обращайся к нему по имени, если это уместно.` :
+                    'Обращайся к пользователю на "вы".';
+                
+                const systemPrompt = `Ты JahvirAI - современный AI-ассистент. ${userGreeting}
+
+Ты независимый AI-помощник со своим именем JahvirAI. Твоя задача - помогать пользователю максимально эффективно и дружелюбно.
+
+ВАЖНО: Когда пользователь просит HTML код, JavaScript код, или любой другой код:
+1. Предоставь полный, рабочий код
+2. Оберни HTML код в теги <html>...</html>
+3. Дай краткое объяснение кода перед ним
+4. Код должен быть красиво отформатирован
+
+Отвечай на русском языке, будь полезным и дружелюбным.`;
+                
+                // Формируем запрос с историей
+                const requestData = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: systemPrompt }]
+                        },
+                        {
+                            role: "model", 
+                            parts: [{ text: "Отлично! Я JahvirAI, твой персональный AI-ассистент. Готов помочь с любыми вопросами, включая создание HTML кода!" }]
+                        },
+                        ...chatHistory.slice(-8), // Берем последние 8 сообщений из истории
+                        {
+                            role: "user",
+                            parts: [{ text: message }]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2500,
+                        topP: 0.8,
+                        topK: 40
+                    }
+                };
+                
+                log('Отправка запроса к ИИ...');
+                const data = await makeAiRequest(requestData);
+                
+                // Извлекаем текст ответа
+                let botResponse = '';
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                    botResponse = data.candidates[0].content.parts[0].text;
+                } else {
+                    botResponse = 'Извините, не удалось получить ответ. Попробуйте еще раз.';
+                }
+                
+                // Обрабатываем ответ на наличие кода
+                botResponse = processAICodeResponse(botResponse);
+                
+                // Убираем индикатор и показываем ответ
+                hideTypingIndicator();
+                addMessageToChat(botResponse, false);
+                
+                // Сохраняем сообщение в историю
+                chatHistory.push({
+                    role: "user",
+                    parts: [{ text: message }]
+                });
+                chatHistory.push({
+                    role: "model",
+                    parts: [{ text: botResponse }]
+                });
+                
+                // Сохраняем историю в localStorage (ограничиваем до 20 сообщений)
+                if (chatHistory.length > 20) {
+                    chatHistory = chatHistory.slice(-20);
+                }
+                localStorage.setItem('jahvirai_chat_history', JSON.stringify(chatHistory));
+                
+                log(`✅ Ответ получен. Длина истории: ${chatHistory.length}`);
+                
+            } catch (error) {
+                console.error('Error calling AI API:', error);
+                hideTypingIndicator();
+                addMessageToChat('Извините, произошла ошибка при подключении к ИИ. Пожалуйста, попробуйте позже.', false);
+                log(`❌ Критическая ошибка: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                input.focus();
+            }
+        }
+
+        function handleChatInputKeydown(event) {
+            const input = document.getElementById('chatInput');
+            
+            // Автоматическое изменение высоты textarea
+            input.style.height = 'auto';
+            input.style.height = (input.scrollHeight) + 'px';
+            
+            // Отправка сообщения по Enter (без Shift)
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function clearChat() {
+            if (confirm('Очистить всю историю чата?')) {
+                chatHistory = [];
+                localStorage.removeItem('jahvirai_chat_history');
+                
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+                
+                // Персонализированное приветственное сообщение
+                const welcomeMessage = userFirstName ? 
+                    `Привет, ${userFirstName}! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?` :
+                    'Привет! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?';
+                
+                addMessageToChat(welcomeMessage, false);
+            }
+        }
+
+        function loadChatHistory() {
+            try {
+                const savedHistory = localStorage.getItem('jahvirai_chat_history');
+                const chatMessages = document.getElementById('chatMessages');
+                
+                // Персонализированное приветственное сообщение
+                const welcomeMessage = userFirstName ? 
+                    `Привет, ${userFirstName}! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?` :
+                    'Привет! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?';
+                
+                if (savedHistory) {
+                    chatHistory = JSON.parse(savedHistory);
+                    
+                    // Добавляем приветственное сообщение
+                    addMessageToChat(welcomeMessage, false);
+                    
+                    // Восстанавливаем последние 5 пар сообщений из истории
+                    const recentHistory = chatHistory.slice(-10); // 5 пар = 10 сообщений
+                    recentHistory.forEach((msg, index) => {
+                        if (msg.role === 'user') {
+                            addMessageToChat(msg.parts[0].text, true);
+                        } else if (msg.role === 'model') {
+                            // Обрабатываем сообщения с кодом при загрузке истории
+                            const processedMessage = processAICodeResponse(msg.parts[0].text);
+                            addMessageToChat(processedMessage, false);
+                        }
+                    });
+                } else {
+                    // Если истории нет, добавляем только приветственное сообщение
+                    addMessageToChat(welcomeMessage, false);
+                }
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+                localStorage.removeItem('jahvirai_chat_history');
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+                
+                const welcomeMessage = userFirstName ? 
+                    `Привет, ${userFirstName}! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?` :
+                    'Привет! Я JahvirAI, твой персональный AI-ассистент. Чем могу помочь?';
+                
+                addMessageToChat(welcomeMessage, false);
+            }
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            
+            // Инициализируем Telegram
+            initTelegram();
+            
+            // Загружаем данные пользователя
+            setTimeout(updateUserData, 100);
+            setTimeout(updateUserData, 300);
+            setTimeout(updateUserData, 500);
+            
+            // Загружаем YouTube данные
+            loadYouTubeData();
+            
+            // Проверяем доступ к постам
+            checkPostsAccess();
+            
+            // Загружаем настройки пользователя
+            loadUserSettings();
+            
+            // Загружаем API ключи для AI
+            loadAiApiKeys().then(() => {
+                console.log(`🔑 Загружено ${aiApiKeys.length} AI API ключей`);
+            });
+            
+            // Загружаем историю чата
+            loadChatHistory();
+            
+            log(`Инициализация завершена. Пользователь: ${userFirstName || 'неизвестен'} (@${userUsername || 'неизвестен'})`);
+        });
     </script>
 </body>
 </html>
