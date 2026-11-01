@@ -67,7 +67,6 @@ main{flex:1;display:flex;min-height:0}
 .tool-calls{margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,monospace}
 .tool-calls div{padding:2px 0}
 
-/* Стили для загрузки файлов */
 .attachment-chip {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--panel2); border: 1px solid var(--border);
@@ -121,6 +120,7 @@ main{flex:1;display:flex;min-height:0}
   <datalist id="models">
     <option value="deepseek-chat"></option>
     <option value="deepseek-reasoner"></option>
+    <option value="deepseek-flash"></option>
   </datalist>
   <label class="toggle" title="Режим размышления (deepseek-reasoner)">
     <input type="checkbox" id="thinkingToggle" />
@@ -173,8 +173,6 @@ main{flex:1;display:flex;min-height:0}
 (() => {
 'use strict';
 
-/* ============================ КОНСТАНТЫ ============================ */
-
 const LS = {
   key: 'dsb_key',
   model: 'dsb_model',
@@ -194,6 +192,7 @@ const DEFAULT_SYSTEM = `Ты — ассистент, который создаё
 - edit_file — заменить точный фрагмент файла. old_string должен точно совпадать (включая отступы, кавычки, переносы) и встречаться один раз. new_string — новая версия фрагмента.
 
 Правила:
+- Если пользователь прикрепил изображения, используй модель deepseek-flash, чтобы увидеть их.
 - Если файл не пуст и нужно что-то менять — сначала вызывай read_file, чтобы видеть реальное содержимое.
 - Изменяй существующий файл ТОЛЬКО через edit_file небольшими точными фрагментами. Не переписывай весь файл целиком.
 - Можно делать несколько правок подряд, вызывая инструменты несколько раз.
@@ -203,47 +202,10 @@ const DEFAULT_SYSTEM = `Ты — ассистент, который создаё
 Отвечай на русском.`;
 
 const TOOLS = [
-  {
-    type: 'function',
-    function: {
-      name: 'read_file',
-      description: 'Прочитать текущее содержимое HTML-файла проекта.',
-      parameters: { type: 'object', properties: {}, required: [] }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'write_file',
-      description: 'Записать файл целиком. Использовать ТОЛЬКО если файл пустой (первичное создание).',
-      parameters: {
-        type: 'object',
-        properties: {
-          content: { type: 'string', description: 'Полное содержимое HTML-файла' }
-        },
-        required: ['content']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'edit_file',
-      description: 'Заменить точный фрагмент файла. old_string должен встречаться ровно один раз (или set replace_all=true). Используй маленькие точечные правки.',
-      parameters: {
-        type: 'object',
-        properties: {
-          old_string: { type: 'string', description: 'Точный фрагмент, который нужно заменить' },
-          new_string: { type: 'string', description: 'Новый фрагмент' },
-          replace_all: { type: 'boolean', description: 'Заменить все вхождения' }
-        },
-        required: ['old_string', 'new_string']
-      }
-    }
-  }
+  { type: 'function', function: { name: 'read_file', description: 'Прочитать текущее содержимое HTML-файла проекта.', parameters: { type: 'object', properties: {}, required: [] } } },
+  { type: 'function', function: { name: 'write_file', description: 'Записать файл целиком. Использовать ТОЛЬКО если файл пустой (первичное создание).', parameters: { type: 'object', properties: { content: { type: 'string', description: 'Полное содержимое HTML-файла' } }, required: ['content'] } } },
+  { type: 'function', function: { name: 'edit_file', description: 'Заменить точный фрагмент файла. old_string должен встречаться ровно один раз (или set replace_all=true). Используй маленькие точечные правки.', parameters: { type: 'object', properties: { old_string: { type: 'string' }, new_string: { type: 'string' }, replace_all: { type: 'boolean' } }, required: ['old_string', 'new_string'] } } }
 ];
-
-/* ============================ СОСТОЯНИЕ ============================ */
 
 const state = {
   apiKey: localStorage.getItem(LS.key) || '',
@@ -266,8 +228,6 @@ let streamRaf = null;
 
 const $ = s => document.querySelector(s);
 
-/* ============================ ПЕРСИСТ ============================ */
-
 function saveState() {
   try {
     localStorage.setItem(LS.key, state.apiKey);
@@ -276,15 +236,24 @@ function saveState() {
     localStorage.setItem(LS.file, state.file);
   } catch (e) { console.warn('save meta failed', e); }
 
-  // Не сохраняем тяжелые картинки в localStorage, чтобы не словить переполнение
   const cleanMessages = state.messages.map(m => {
+    let content = m.content;
+    // Если контент — массив блоков (изображения), заменяем base64 на текст при сохранении
+    if (Array.isArray(content)) {
+      content = content.map(part => {
+        if (part.type === 'image_url') {
+          return { type: 'image_url', image_url: { url: '[Изображение]' } };
+        }
+        return part;
+      });
+    }
     if (m._attachments) {
       const att = m._attachments.filter(a => a.type !== 'image');
-      if (att.length) return { ...m, _attachments: att };
+      if (att.length) return { ...m, content, _attachments: att };
       const { _attachments, ...rest } = m;
-      return rest;
+      return { ...rest, content };
     }
-    return m;
+    return { ...m, content };
   });
 
   let msgs = cleanMessages;
@@ -302,8 +271,6 @@ function saveState() {
   }
 }
 
-/* ============================ UI: ЧАТ ============================ */
-
 function truncate(s, n) {
   s = String(s ?? '');
   return s.length > n ? s.slice(0, n) + '…' : s;
@@ -311,11 +278,8 @@ function truncate(s, n) {
 
 function buildMessageNode(m) {
   const div = document.createElement('div');
-
   if (m.role === 'user') {
     div.className = 'msg user';
-    
-    // Отрисовка прикрепленных файлов
     if (m._attachments && m._attachments.length) {
       const attBox = document.createElement('div');
       attBox.className = 'attachment-preview';
@@ -323,9 +287,7 @@ function buildMessageNode(m) {
         if (att.type === 'image') {
           const img = document.createElement('img');
           img.src = att.content;
-          img.style.maxWidth = '100%';
-          img.style.maxHeight = '200px';
-          img.style.borderRadius = '6px';
+          img.style.maxWidth = '100%'; img.style.maxHeight = '200px'; img.style.borderRadius = '6px';
           attBox.appendChild(img);
         } else {
           const f = document.createElement('div');
@@ -336,10 +298,13 @@ function buildMessageNode(m) {
       }
       div.appendChild(attBox);
     }
-    
     const c = document.createElement('div');
     c.className = 'content-block';
-    c.textContent = m.content || '';
+    if (Array.isArray(m.content)) {
+      c.textContent = m.content.filter(x => x.type === 'text').map(x => x.text).join('\n');
+    } else {
+      c.textContent = m.content || '';
+    }
     div.appendChild(c);
     return div;
   }
@@ -352,25 +317,17 @@ function buildMessageNode(m) {
 
   if (m.role === 'assistant') {
     div.className = 'msg assistant' + (m._streaming ? ' streaming' : '');
-
     if (m.reasoning_content) {
       const det = document.createElement('details');
       det.className = 'reasoning-block';
-      const sum = document.createElement('summary');
-      sum.textContent = '🧠 Размышление';
-      const txt = document.createElement('div');
-      txt.className = 'reasoning-text';
-      txt.textContent = m.reasoning_content;
-      det.appendChild(sum);
-      det.appendChild(txt);
+      det.innerHTML = '<summary>🧠 Размышление</summary><div class="reasoning-text"></div>';
+      det.querySelector('.reasoning-text').textContent = m.reasoning_content;
       div.appendChild(det);
     }
-
     const c = document.createElement('div');
     c.className = 'content-block';
     c.textContent = m.content || '';
     div.appendChild(c);
-
     if (m.tool_calls && m.tool_calls.length) {
       const wrap = document.createElement('div');
       wrap.className = 'tool-calls';
@@ -382,10 +339,8 @@ function buildMessageNode(m) {
       }
       div.appendChild(wrap);
     }
-
     return div;
   }
-
   return div;
 }
 
@@ -414,7 +369,6 @@ function updateStreamingMessage() {
   if (!node) return;
   const m = state.messages[state.messages.length - 1];
   if (!m || !m._streaming) return;
-
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
 
   if (m.reasoning_content) {
@@ -452,7 +406,6 @@ function updateStreamingMessage() {
       tBlock.appendChild(el);
     }
   }
-
   if (atBottom) box.scrollTop = box.scrollHeight;
 }
 
@@ -463,8 +416,6 @@ function scheduleStreamUpdate() {
     updateStreamingMessage();
   });
 }
-
-/* ============================ UI: ФАЙЛ ============================ */
 
 function updatePreview(force = false) {
   if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
@@ -483,54 +434,34 @@ function setFile(content) {
   updatePreview();
 }
 
-/* ============================ ИНСТРУМЕНТЫ ============================ */
-
 function executeTool(name, args) {
   try {
-    if (name === 'read_file') {
-      return state.file ? state.file : '(файл пуст)';
-    }
-
+    if (name === 'read_file') return state.file ? state.file : '(файл пуст)';
     if (name === 'write_file') {
-      if (state.file.trim() !== '') {
-        return 'ОШИБКА: файл не пуст. Используй edit_file для точечных правок.';
-      }
+      if (state.file.trim() !== '') return 'ОШИБКА: файл не пуст. Используй edit_file для точечных правок.';
       setFile(args.content || '');
-      return 'OK: файл записан полностью (' + state.file.length + ' символов).';
+      return 'OK: файл записан полностью.';
     }
-
     if (name === 'edit_file') {
       const oldStr = args.old_string ?? '';
       const newStr = args.new_string ?? '';
       const all = !!args.replace_all;
-
       if (!oldStr) return 'ОШИБКА: old_string пустой.';
       if (!state.file) return 'ОШИБКА: файл пуст. Сначала write_file.';
-
       const idx = state.file.indexOf(oldStr);
-      if (idx === -1) {
-        return 'ОШИБКА: old_string не найден в файле. Прочитай файл через read_file и используй точный фрагмент.';
-      }
-
+      if (idx === -1) return 'ОШИБКА: old_string не найден.';
       if (!all) {
         const idx2 = state.file.indexOf(oldStr, idx + oldStr.length);
-        if (idx2 !== -1) {
-          return 'ОШИБКА: old_string встречается несколько раз. Уточни фрагмент или используй replace_all=true.';
-        }
+        if (idx2 !== -1) return 'ОШИБКА: old_string встречается несколько раз.';
         setFile(state.file.slice(0, idx) + newStr + state.file.slice(idx + oldStr.length));
       } else {
         setFile(state.file.split(oldStr).join(newStr));
       }
-      return 'OK: заменено. Новый размер файла ' + state.file.length + ' символов.';
+      return 'OK: заменено.';
     }
-
     return 'ОШИБКА: неизвестный инструмент ' + name;
-  } catch (e) {
-    return 'ОШИБКА: ' + e.message;
-  }
+  } catch (e) { return 'ОШИБКА: ' + e.message; }
 }
-
-/* ============================ ЗАГРУЗКА ФАЙЛОВ ============================ */
 
 function renderAttachments() {
   const box = $('#attachments');
@@ -538,82 +469,48 @@ function renderAttachments() {
   pendingAttachments.forEach((att, idx) => {
     const chip = document.createElement('div');
     chip.className = 'attachment-chip';
-    
     if (att.type === 'image') {
       const img = document.createElement('img');
       img.src = att.content;
       chip.appendChild(img);
     }
-    
     const name = document.createElement('span');
     name.textContent = att.name;
-    name.style.whiteSpace = 'nowrap';
-    name.style.overflow = 'hidden';
-    name.style.textOverflow = 'ellipsis';
+    name.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;';
     name.title = att.name;
     chip.appendChild(name);
-
     const rem = document.createElement('span');
     rem.className = 'remove';
     rem.textContent = '×';
-    rem.onclick = () => {
-      pendingAttachments.splice(idx, 1);
-      renderAttachments();
-    };
+    rem.onclick = () => { pendingAttachments.splice(idx, 1); renderAttachments(); };
     chip.appendChild(rem);
-    
     box.appendChild(chip);
   });
 }
 
-/* ============================ API ============================ */
-
-/* Главный фикс ошибки "tool must be a response to preceding tool_calls".
-   Функция проверяет, что каждый вызов инструмента имеет ОТВЕТ, и они идут строго друг за другом.
-   Если ответ потерялся (например, при нажатии "Стоп"), вызов инструмента удаляется, чтобы API не падало. */
 function sanitizeMessages(messages) {
   const out = [];
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i];
     if (m._streaming) continue;
-
-    if (m.role === 'tool') {
-      continue; // Пропускаем, они добавляются вместе с assistant ниже
-    }
-
+    if (m.role === 'tool') continue;
     if (m.role === 'assistant') {
       const c = { role: 'assistant', content: m.content || '' };
-      
       if (m.tool_calls && m.tool_calls.length > 0) {
         const tcs = m.tool_calls;
         const validTools = [];
         let isValid = true;
-        
-        // Проверяем, что все вызовы инструментов имеют ответы
         for (let j = 0; j < tcs.length; j++) {
           const nextMsg = messages[i + 1 + j];
           if (!nextMsg || nextMsg.role !== 'tool' || nextMsg.tool_call_id !== tcs[j].id) {
-            isValid = false;
-            break;
+            isValid = false; break;
           }
-          validTools.push({
-            role: 'tool',
-            tool_call_id: nextMsg.tool_call_id,
-            content: nextMsg.content || ''
-          });
+          validTools.push({ role: 'tool', tool_call_id: nextMsg.tool_call_id, content: nextMsg.content || '' });
         }
-
         if (isValid) {
-          c.tool_calls = tcs.map(t => ({
-            id: t.id,
-            type: t.type || 'function',
-            function: { name: t.function.name, arguments: t.function.arguments }
-          }));
-          out.push(c);
-          out.push(...validTools);
-          i += tcs.length; // Пропускаем tool-сообщения в оригинальном массиве
+          c.tool_calls = tcs.map(t => ({ id: t.id, type: t.type || 'function', function: { name: t.function.name, arguments: t.function.arguments } }));
+          out.push(c); out.push(...validTools); i += tcs.length;
         } else {
-          // Если ответы не найдены (прервано), убираем вызовы инструментов
           if (!c.content) c.content = "[Действие отменено]";
           out.push(c);
         }
@@ -621,7 +518,7 @@ function sanitizeMessages(messages) {
         out.push(c);
       }
     } else {
-      out.push({ role: m.role, content: m.content || '' });
+      out.push({ role: m.role, content: m.content });
     }
   }
   return out;
@@ -629,10 +526,8 @@ function sanitizeMessages(messages) {
 
 async function streamApiCall(onDelta, signal) {
   if (!state.apiKey) throw new Error('Укажи DeepSeek API key в шапке');
-
   const systemContent = DEFAULT_SYSTEM + (state.custom.trim() ? '\n\n' + state.custom.trim() : '');
   const msgs = sanitizeMessages(state.messages);
-
   const body = {
     model: state.model,
     messages: [{ role: 'system', content: systemContent }, ...msgs],
@@ -641,58 +536,36 @@ async function streamApiCall(onDelta, signal) {
     tools: TOOLS,
     tool_choice: 'auto'
   };
-
   const resp = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + state.apiKey
-    },
-    body: JSON.stringify(body),
-    signal
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey },
+    body: JSON.stringify(body), signal
   });
-
   if (!resp.ok) {
     const t = await resp.text().catch(() => '');
     throw new Error('API ' + resp.status + ': ' + truncate(t, 500));
   }
-
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
-  let content = '';
-  let reasoning = '';
+  let buffer = '', content = '', reasoning = '';
   const toolCalls = [];
-
   const handleLines = (lines) => {
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || !trimmed.startsWith('data:')) continue;
       const data = trimmed.slice(5).trim();
       if (!data || data === '[DONE]') continue;
-
-      let json;
-      try { json = JSON.parse(data); } catch { continue; }
+      let json; try { json = JSON.parse(data); } catch { continue; }
       if (json.error) throw new Error(json.error.message || JSON.stringify(json.error));
-
       const choice = json.choices && json.choices[0];
       if (!choice) continue;
       const delta = choice.delta || {};
-
-      if (delta.reasoning_content) {
-        reasoning += delta.reasoning_content;
-        onDelta({ type: 'reasoning', full: reasoning });
-      }
-      if (delta.content) {
-        content += delta.content;
-        onDelta({ type: 'content', full: content });
-      }
+      if (delta.reasoning_content) { reasoning += delta.reasoning_content; onDelta({ type: 'reasoning', full: reasoning }); }
+      if (delta.content) { content += delta.content; onDelta({ type: 'content', full: content }); }
       if (delta.tool_calls) {
         for (const tc of delta.tool_calls) {
           const idx = typeof tc.index === 'number' ? tc.index : 0;
-          if (!toolCalls[idx]) {
-            toolCalls[idx] = { id: '', type: 'function', function: { name: '', arguments: '' } };
-          }
+          if (!toolCalls[idx]) toolCalls[idx] = { id: '', type: 'function', function: { name: '', arguments: '' } };
           const slot = toolCalls[idx];
           if (tc.id) slot.id = tc.id;
           if (tc.function) {
@@ -704,7 +577,6 @@ async function streamApiCall(onDelta, signal) {
       }
     }
   };
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -715,14 +587,11 @@ async function streamApiCall(onDelta, signal) {
   }
   buffer += decoder.decode();
   if (buffer.trim()) handleLines([buffer]);
-
   const msg = { role: 'assistant', content };
   if (reasoning) msg.reasoning_content = reasoning;
   if (toolCalls.length) msg.tool_calls = toolCalls.filter(Boolean);
   return msg;
 }
-
-/* ============================ АГЕНТ ============================ */
 
 function setStatus(text, online) {
   $('#statusText').textContent = text;
@@ -741,65 +610,46 @@ async function runAgent() {
   setBusy(true);
   setStatus('работает…', false);
   currentController = new AbortController();
-
   try {
     for (let step = 0; step < 30; step++) {
       const placeholder = { role: 'assistant', content: '', _streaming: true };
       state.messages.push(placeholder);
       renderMessages();
       scrollToBottom();
-
       let msg;
       try {
         msg = await streamApiCall((delta) => {
-          if (delta.type === 'reasoning') {
-            placeholder.reasoning_content = delta.full;
-          } else if (delta.type === 'content') {
-            placeholder.content = delta.full;
-          } else if (delta.type === 'tool_calls') {
-            placeholder.tool_calls = delta.tool_calls;
-          }
+          if (delta.type === 'reasoning') placeholder.reasoning_content = delta.full;
+          else if (delta.type === 'content') placeholder.content = delta.full;
+          else if (delta.type === 'tool_calls') placeholder.tool_calls = delta.tool_calls;
           scheduleStreamUpdate();
         }, currentController.signal);
       } catch (e) {
         const idx = state.messages.indexOf(placeholder);
         if (idx !== -1) state.messages.splice(idx, 1);
         renderMessages();
-
         if (e.name === 'AbortError') {
           state.messages.push({ role: 'assistant', content: '⏹ Остановлено.' });
-          renderMessages();
-          saveState();
-          return;
+          renderMessages(); saveState(); return;
         }
         throw e;
       }
-
       state.messages[state.messages.length - 1] = msg;
       renderMessages();
       saveState();
-
       if (msg.tool_calls && msg.tool_calls.length) {
         for (const tc of msg.tool_calls) {
           let args = {};
           try { args = JSON.parse(tc.function.arguments || '{}'); } catch { args = {}; }
           const result = executeTool(tc.function.name, args);
-          state.messages.push({
-            role: 'tool',
-            tool_call_id: tc.id,
-            content: result
-          });
+          state.messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
         }
-        renderMessages();
-        saveState();
-      } else {
-        break;
-      }
+        renderMessages(); saveState();
+      } else { break; }
     }
   } catch (e) {
     state.messages.push({ role: 'assistant', content: '⚠️ Ошибка: ' + e.message });
-    renderMessages();
-    saveState();
+    renderMessages(); saveState();
   } finally {
     setBusy(false);
     currentController = null;
@@ -816,34 +666,47 @@ function send() {
   const text = ta.value.trim();
   if (!text && !pendingAttachments.length) return;
 
-  let finalContent = text;
+  let textPart = text;
+  const imagesToSend = [];
 
   for (const att of pendingAttachments) {
     if (att.type === 'text') {
-      finalContent += '\n\nФайл `' + att.name + '`:\n```\n' + att.content + '\n```';
+      textPart += '\n\nФайл `' + att.name + '`:\n```\n' + att.content + '\n```';
     } else if (att.type === 'image') {
-      // DeepSeek API пока не поддерживает vision, поэтому добавляем пометку в текст
-      finalContent += '\n[Прикреплено изображение: ' + att.name + ']';
+      imagesToSend.push(att);
     }
+  }
+
+  let finalContent;
+  if (imagesToSend.length > 0) {
+    finalContent = [{ type: 'text', text: textPart }];
+    for (const img of imagesToSend) {
+      finalContent.push({ type: 'image_url', image_url: { url: img.content } });
+    }
+    // Автоматически переключаем на модель с поддержкой зрения
+    if (state.model !== 'deepseek-flash' && state.model !== 'deepseek-v4-flash-vision-exp') {
+      state.model = 'deepseek-flash';
+      $('#model').value = state.model;
+    }
+  } else {
+    finalContent = textPart;
   }
 
   ta.value = '';
   autoResize();
-  
-  state.messages.push({ 
-    role: 'user', 
+
+  state.messages.push({
+    role: 'user',
     content: finalContent,
     _attachments: [...pendingAttachments]
   });
-  
+
   pendingAttachments = [];
   renderAttachments();
   renderMessages();
   saveState();
   runAgent();
 }
-
-/* ============================ КОНТРОЛЫ ============================ */
 
 function autoResize() {
   const ta = $('#input');
@@ -853,10 +716,7 @@ function autoResize() {
 
 $('#input').addEventListener('input', autoResize);
 $('#input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 $('#btnSend').addEventListener('click', send);
 
@@ -865,19 +725,16 @@ $('#fileInput').addEventListener('change', async (e) => {
   const files = e.target.files;
   if (!files.length) return;
   for (const file of files) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Файл ' + file.name + ' слишком большой (макс 5MB)');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Файл ' + file.name + ' слишком большой (макс 10MB)');
       continue;
     }
     const content = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
-      if (file.type.startsWith('image/')) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
-      }
+      if (file.type.startsWith('image/')) reader.readAsDataURL(file);
+      else reader.readAsText(file);
     });
     pendingAttachments.push({
       type: file.type.startsWith('image/') ? 'image' : 'text',
@@ -890,10 +747,7 @@ $('#fileInput').addEventListener('change', async (e) => {
   e.target.value = '';
 });
 
-$('#apiKey').addEventListener('input', e => {
-  state.apiKey = e.target.value.trim();
-  saveState();
-});
+$('#apiKey').addEventListener('input', e => { state.apiKey = e.target.value.trim(); saveState(); });
 
 function syncToggleFromModel() {
   $('#thinkingToggle').checked = /reasoner/i.test(state.model);
@@ -906,8 +760,7 @@ $('#model').addEventListener('input', e => {
 });
 
 $('#thinkingToggle').addEventListener('change', e => {
-  const on = e.target.checked;
-  state.model = on ? 'deepseek-reasoner' : 'deepseek-chat';
+  state.model = e.target.checked ? 'deepseek-reasoner' : 'deepseek-chat';
   $('#model').value = state.model;
   saveState();
 });
@@ -917,10 +770,7 @@ $('#btnReset').addEventListener('click', () => {
   state.messages = [];
   setFile('');
   renderMessages();
-  try {
-    localStorage.removeItem(LS.messages);
-    localStorage.removeItem(LS.file);
-  } catch {}
+  try { localStorage.removeItem(LS.messages); localStorage.removeItem(LS.file); } catch {}
   saveState();
 });
 
@@ -952,24 +802,10 @@ $('#code').addEventListener('input', e => {
   previewTimer = setTimeout(() => updatePreview(), 500);
 });
 
-/* Модалка */
-$('#btnCustom').addEventListener('click', () => {
-  $('#customText').value = state.custom;
-  $('#customModal').classList.add('open');
-});
-$('#btnCustomCancel').addEventListener('click', () => {
-  $('#customModal').classList.remove('open');
-});
-$('#btnCustomSave').addEventListener('click', () => {
-  state.custom = $('#customText').value;
-  saveState();
-  $('#customModal').classList.remove('open');
-});
-$('#customModal').addEventListener('click', e => {
-  if (e.target === $('#customModal')) $('#customModal').classList.remove('open');
-});
-
-/* ============================ ИНИЦИАЛИЗАЦИЯ ============================ */
+$('#btnCustom').addEventListener('click', () => { $('#customText').value = state.custom; $('#customModal').classList.add('open'); });
+$('#btnCustomCancel').addEventListener('click', () => $('#customModal').classList.remove('open'));
+$('#btnCustomSave').addEventListener('click', () => { state.custom = $('#customText').value; saveState(); $('#customModal').classList.remove('open'); });
+$('#customModal').addEventListener('click', e => { if (e.target === $('#customModal')) $('#customModal').classList.remove('open'); });
 
 function init() {
   $('#apiKey').value = state.apiKey;
@@ -980,7 +816,6 @@ function init() {
   updatePreview(true);
   setStatus('готов', true);
 }
-
 init();
 })();
 </script>
