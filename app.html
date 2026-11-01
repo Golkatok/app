@@ -66,8 +66,26 @@ main{flex:1;display:flex;min-height:0}
 }
 .tool-calls{margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,monospace}
 .tool-calls div{padding:2px 0}
-#composer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end}
+
+/* Стили для загрузки файлов */
+.attachment-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px; font-size: 12px;
+  max-width: 200px; color: var(--text);
+}
+.attachment-chip img { width: 24px; height: 24px; object-fit: cover; border-radius: 4px; }
+.attachment-chip .remove { cursor: pointer; color: var(--muted); font-weight: bold; font-size: 14px; }
+.attachment-chip .remove:hover { color: var(--danger); }
+.attachment-preview { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; width: 100%; }
+.attachment-preview:empty { display: none; }
+
+#composer{padding:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.composer-inputs{display:flex;gap:8px;align-items:flex-end;width:100%}
 #composer textarea{flex:1;resize:none;min-height:44px;max-height:180px;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--border)}
+#btnAttach{padding:10px 14px;border-radius:10px;font-size:16px;line-height:1;background:var(--panel2);border:1px solid var(--border)}
+#btnAttach:hover{border-color:var(--accent)}
+
 #right{flex:1;display:flex;flex-direction:column;min-width:0;background:#0a0c11}
 #tabs{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--panel);align-items:center}
 #tabs .tab{padding:5px 12px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid transparent}
@@ -118,14 +136,19 @@ main{flex:1;display:flex;min-height:0}
   <section id="chat">
     <div id="messages"></div>
     <div id="composer">
-      <textarea id="input" placeholder="Опиши, что создать или изменить... (Enter — отправить, Shift+Enter — перенос)"></textarea>
-      <button id="btnSend" class="primary">Отправить</button>
+      <div id="attachments" class="attachment-preview"></div>
+      <div class="composer-inputs">
+        <button id="btnAttach" type="button" title="Прикрепить файл или фото">📎</button>
+        <input type="file" id="fileInput" multiple style="display:none" />
+        <textarea id="input" placeholder="Опиши, что создать или изменить... (Enter — отправить, Shift+Enter — перенос)"></textarea>
+        <button id="btnSend" class="primary">Отправить</button>
+      </div>
     </div>
   </section>
   <section id="right">
     <div id="tabs">
       <div class="tab active" data-tab="preview">Предпросмотр</div>
-      <div class="tab" data-tab="code">Код.</div>
+      <div class="tab" data-tab="code">Код</div>
       <div class="spacer"></div>
       <button id="btnDownload" title="Скачать HTML">Скачать</button>
     </div>
@@ -146,8 +169,7 @@ main{flex:1;display:flex;min-height:0}
   </div>
 </div>
 
-<!-- ПРОДОЛЖЕНИЕ В ЧАСТИ 2 -->
-  <script>
+<script>
 (() => {
 'use strict';
 
@@ -175,6 +197,7 @@ const DEFAULT_SYSTEM = `Ты — ассистент, который создаё
 - Если файл не пуст и нужно что-то менять — сначала вызывай read_file, чтобы видеть реальное содержимое.
 - Изменяй существующий файл ТОЛЬКО через edit_file небольшими точными фрагментами. Не переписывай весь файл целиком.
 - Можно делать несколько правок подряд, вызывая инструменты несколько раз.
+- Если пользователь прикрепил текстовый файл, его содержимое будет добавлено в сообщение.
 - После завершения правок кратко сообщи пользователю, что изменил.
 
 Отвечай на русском.`;
@@ -235,6 +258,7 @@ try {
   if (!Array.isArray(state.messages)) state.messages = [];
 } catch { state.messages = []; }
 
+let pendingAttachments = [];
 let currentController = null;
 let lastPreviewHtml = null;
 let previewTimer = null;
@@ -252,7 +276,18 @@ function saveState() {
     localStorage.setItem(LS.file, state.file);
   } catch (e) { console.warn('save meta failed', e); }
 
-  let msgs = state.messages;
+  // Не сохраняем тяжелые картинки в localStorage, чтобы не словить переполнение
+  const cleanMessages = state.messages.map(m => {
+    if (m._attachments) {
+      const att = m._attachments.filter(a => a.type !== 'image');
+      if (att.length) return { ...m, _attachments: att };
+      const { _attachments, ...rest } = m;
+      return rest;
+    }
+    return m;
+  });
+
+  let msgs = cleanMessages;
   for (let attempt = 0; attempt < 30; attempt++) {
     try {
       localStorage.setItem(LS.messages, JSON.stringify(msgs));
@@ -279,7 +314,33 @@ function buildMessageNode(m) {
 
   if (m.role === 'user') {
     div.className = 'msg user';
-    div.textContent = m.content || '';
+    
+    // Отрисовка прикрепленных файлов
+    if (m._attachments && m._attachments.length) {
+      const attBox = document.createElement('div');
+      attBox.className = 'attachment-preview';
+      for (const att of m._attachments) {
+        if (att.type === 'image') {
+          const img = document.createElement('img');
+          img.src = att.content;
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '200px';
+          img.style.borderRadius = '6px';
+          attBox.appendChild(img);
+        } else {
+          const f = document.createElement('div');
+          f.className = 'attachment-chip';
+          f.textContent = '📄 ' + att.name;
+          attBox.appendChild(f);
+        }
+      }
+      div.appendChild(attBox);
+    }
+    
+    const c = document.createElement('div');
+    c.className = 'content-block';
+    c.textContent = m.content || '';
+    div.appendChild(c);
     return div;
   }
 
@@ -347,7 +408,6 @@ function scrollToBottom() {
   box.scrollTop = box.scrollHeight;
 }
 
-/* Инкрементальное обновление последнего (стримящегося) сообщения */
 function updateStreamingMessage() {
   const box = $('#messages');
   const node = box.querySelector('.msg.assistant.streaming');
@@ -470,43 +530,100 @@ function executeTool(name, args) {
   }
 }
 
-/* ПРОДОЛЖЕНИЕ В ЧАСТИ 3 */
- /* ============================ API ============================ */
+/* ============================ ЗАГРУЗКА ФАЙЛОВ ============================ */
 
+function renderAttachments() {
+  const box = $('#attachments');
+  box.innerHTML = '';
+  pendingAttachments.forEach((att, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+    
+    if (att.type === 'image') {
+      const img = document.createElement('img');
+      img.src = att.content;
+      chip.appendChild(img);
+    }
+    
+    const name = document.createElement('span');
+    name.textContent = att.name;
+    name.style.whiteSpace = 'nowrap';
+    name.style.overflow = 'hidden';
+    name.style.textOverflow = 'ellipsis';
+    name.title = att.name;
+    chip.appendChild(name);
+
+    const rem = document.createElement('span');
+    rem.className = 'remove';
+    rem.textContent = '×';
+    rem.onclick = () => {
+      pendingAttachments.splice(idx, 1);
+      renderAttachments();
+    };
+    chip.appendChild(rem);
+    
+    box.appendChild(chip);
+  });
+}
+
+/* ============================ API ============================ */
+
+/* Главный фикс ошибки "tool must be a response to preceding tool_calls".
+   Функция проверяет, что каждый вызов инструмента имеет ОТВЕТ, и они идут строго друг за другом.
+   Если ответ потерялся (например, при нажатии "Стоп"), вызов инструмента удаляется, чтобы API не падало. */
 function sanitizeMessages(messages) {
   const out = [];
-  for (const m of messages) {
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
     if (m._streaming) continue;
+
     if (m.role === 'tool') {
-      const prev = out[out.length - 1];
-      if (prev && prev.role === 'assistant' && prev.tool_calls &&
-          prev.tool_calls.some(t => t.id === m.tool_call_id)) {
-        out.push({ role: 'tool', tool_call_id: m.tool_call_id, content: m.content || '' });
+      continue; // Пропускаем, они добавляются вместе с assistant ниже
+    }
+
+    if (m.role === 'assistant') {
+      const c = { role: 'assistant', content: m.content || '' };
+      
+      if (m.tool_calls && m.tool_calls.length > 0) {
+        const tcs = m.tool_calls;
+        const validTools = [];
+        let isValid = true;
+        
+        // Проверяем, что все вызовы инструментов имеют ответы
+        for (let j = 0; j < tcs.length; j++) {
+          const nextMsg = messages[i + 1 + j];
+          if (!nextMsg || nextMsg.role !== 'tool' || nextMsg.tool_call_id !== tcs[j].id) {
+            isValid = false;
+            break;
+          }
+          validTools.push({
+            role: 'tool',
+            tool_call_id: nextMsg.tool_call_id,
+            content: nextMsg.content || ''
+          });
+        }
+
+        if (isValid) {
+          c.tool_calls = tcs.map(t => ({
+            id: t.id,
+            type: t.type || 'function',
+            function: { name: t.function.name, arguments: t.function.arguments }
+          }));
+          out.push(c);
+          out.push(...validTools);
+          i += tcs.length; // Пропускаем tool-сообщения в оригинальном массиве
+        } else {
+          // Если ответы не найдены (прервано), убираем вызовы инструментов
+          if (!c.content) c.content = "[Действие отменено]";
+          out.push(c);
+        }
+      } else {
+        out.push(c);
       }
-      continue;
-    }
-    const c = { role: m.role, content: m.content || '' };
-    if (m.tool_calls && m.tool_calls.length) {
-      c.tool_calls = m.tool_calls.map(t => ({
-        id: t.id,
-        type: t.type || 'function',
-        function: { name: t.function.name, arguments: t.function.arguments }
-      }));
-    }
-    out.push(c);
-  }
-  for (let i = 0; i < out.length; i++) {
-    const m = out[i];
-    if (m.role === 'assistant' && m.tool_calls) {
-      const ids = m.tool_calls.map(t => t.id);
-      const following = out.slice(i + 1, i + 1 + ids.length);
-      const ok = ids.every(id => following.some(f => f.role === 'tool' && f.tool_call_id === id));
-      if (!ok) {
-        out[i] = { role: 'assistant', content: (m.content || '') + ' [действия пропущены]' };
-      }
+    } else {
+      out.push({ role: m.role, content: m.content || '' });
     }
   }
-  while (out.length && out[0].role === 'tool') out.shift();
   return out;
 }
 
@@ -697,10 +814,30 @@ function send() {
   }
   const ta = $('#input');
   const text = ta.value.trim();
-  if (!text) return;
+  if (!text && !pendingAttachments.length) return;
+
+  let finalContent = text;
+
+  for (const att of pendingAttachments) {
+    if (att.type === 'text') {
+      finalContent += '\n\nФайл `' + att.name + '`:\n```\n' + att.content + '\n```';
+    } else if (att.type === 'image') {
+      // DeepSeek API пока не поддерживает vision, поэтому добавляем пометку в текст
+      finalContent += '\n[Прикреплено изображение: ' + att.name + ']';
+    }
+  }
+
   ta.value = '';
   autoResize();
-  state.messages.push({ role: 'user', content: text });
+  
+  state.messages.push({ 
+    role: 'user', 
+    content: finalContent,
+    _attachments: [...pendingAttachments]
+  });
+  
+  pendingAttachments = [];
+  renderAttachments();
   renderMessages();
   saveState();
   runAgent();
@@ -722,6 +859,36 @@ $('#input').addEventListener('keydown', e => {
   }
 });
 $('#btnSend').addEventListener('click', send);
+
+$('#btnAttach').addEventListener('click', () => $('#fileInput').click());
+$('#fileInput').addEventListener('change', async (e) => {
+  const files = e.target.files;
+  if (!files.length) return;
+  for (const file of files) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Файл ' + file.name + ' слишком большой (макс 5MB)');
+      continue;
+    }
+    const content = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      if (file.type.startsWith('image/')) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+    pendingAttachments.push({
+      type: file.type.startsWith('image/') ? 'image' : 'text',
+      name: file.name,
+      mime: file.type,
+      content
+    });
+  }
+  renderAttachments();
+  e.target.value = '';
+});
 
 $('#apiKey').addEventListener('input', e => {
   state.apiKey = e.target.value.trim();
@@ -785,8 +952,7 @@ $('#code').addEventListener('input', e => {
   previewTimer = setTimeout(() => updatePreview(), 500);
 });
 
-/* Модалка дополнительных инструкций */
-
+/* Модалка */
 $('#btnCustom').addEventListener('click', () => {
   $('#customText').value = state.custom;
   $('#customModal').classList.add('open');
