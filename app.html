@@ -15,10 +15,11 @@ html,body{height:100%;margin:0}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg);color:var(--text);display:flex;flex-direction:column;
+  overflow: hidden;
 }
 header{
   display:flex;gap:8px;align-items:center;padding:10px 14px;
-  background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;
+  background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap; z-index: 10;
 }
 header h1{font-size:15px;margin:0 10px 0 0;font-weight:600;letter-spacing:.3px}
 header h1 span{color:var(--accent)}
@@ -45,8 +46,27 @@ label.toggle{
 }
 label.toggle:hover{border-color:var(--accent)}
 label.toggle input{accent-color:var(--accent);cursor:pointer;margin:0}
-main{flex:1;display:flex;min-height:0}
-#chat{width:46%;min-width:320px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--panel)}
+main{flex:1;display:flex;min-height:0; width: 100%;}
+
+/* Сайдбар с чатами */
+#sidebar {
+  width: 250px; min-width: 250px; background: var(--panel); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; transition: width .2s;
+}
+#chatList { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.chat-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  color: var(--muted); transition: .15s; border: 1px solid transparent;
+}
+.chat-item:hover { background: var(--panel2); color: var(--text); }
+.chat-item.active { background: var(--user); color: #fff; border-color: var(--border); }
+.chat-item .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; pointer-events: none; }
+.chat-item .del { opacity: 0; cursor: pointer; padding: 0 4px; color: var(--muted); font-weight: bold; }
+.chat-item:hover .del { opacity: 1; }
+.chat-item .del:hover { color: var(--danger); }
+
+#chat{flex:1; display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--panel); min-width: 300px;}
 #messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
 .msg{padding:10px 13px;border-radius:12px;word-wrap:break-word;font-size:14px;line-height:1.5}
 .msg.user{background:var(--user);align-self:flex-end;max-width:85%;white-space:pre-wrap}
@@ -85,7 +105,7 @@ main{flex:1;display:flex;min-height:0}
 #btnAttach{padding:10px 14px;border-radius:10px;font-size:16px;line-height:1;background:var(--panel2);border:1px solid var(--border)}
 #btnAttach:hover{border-color:var(--accent)}
 
-#right{flex:1;display:flex;flex-direction:column;min-width:0;background:#0a0c11}
+#right{flex:1.2;display:flex;flex-direction:column;min-width: 300px;background:#0a0c11}
 #tabs{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--panel);align-items:center}
 #tabs .tab{padding:5px 12px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid transparent}
 #tabs .tab.active{background:var(--panel2);color:#fff;border-color:var(--border)}
@@ -104,10 +124,13 @@ main{flex:1;display:flex;min-height:0}
 .modal .box textarea{min-height:180px;resize:vertical;font-family:ui-monospace,monospace;font-size:13px}
 .modal .box small{color:var(--muted)}
 .row{display:flex;gap:8px;justify-content:flex-end}
+
+@media (max-width:1000px){ #sidebar { width: 200px; min-width: 200px; } }
 @media (max-width:820px){
   main{flex-direction:column}
-  #chat{width:100%;height:50%;border-right:none;border-bottom:1px solid var(--border)}
-  #right{height:50%}
+  #sidebar { width: 100%; min-width: 0; max-height: 120px; border-right: none; border-bottom: 1px solid var(--border); }
+  #chat{flex:none; height:45%; border-right:none; border-bottom:1px solid var(--border)}
+  #right{flex:none; height:35%}
 }
 </style>
 </head>
@@ -129,10 +152,16 @@ main{flex:1;display:flex;min-height:0}
   <button id="btnCustom">Доп. инструкции</button>
   <span style="flex:1"></span>
   <span id="status"><span class="dot online"></span><span id="statusText">готов</span></span>
-  <button id="btnReset" title="Очистить чат и файл">Сброс</button>
 </header>
 
 <main>
+  <aside id="sidebar">
+    <div style="padding: 10px;">
+      <button id="btnNewChat" class="primary" style="width:100%; padding:10px;">➕ Новый чат</button>
+    </div>
+    <div id="chatList"></div>
+  </aside>
+
   <section id="chat">
     <div id="messages"></div>
     <div id="composer">
@@ -145,6 +174,7 @@ main{flex:1;display:flex;min-height:0}
       </div>
     </div>
   </section>
+
   <section id="right">
     <div id="tabs">
       <div class="tab active" data-tab="preview">Предпросмотр</div>
@@ -176,9 +206,9 @@ main{flex:1;display:flex;min-height:0}
 const LS = {
   key: 'dsb_key',
   model: 'dsb_model',
-  messages: 'dsb_messages',
-  file: 'dsb_file',
-  custom: 'dsb_custom'
+  custom: 'dsb_custom',
+  chats: 'dsb_chats_v2',
+  current: 'dsb_current_chat'
 };
 
 const EMPTY_PREVIEW = '<!doctype html><html><body style="font-family:sans-serif;color:#888;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fff">Предпросмотр появится здесь</body></html>';
@@ -211,14 +241,12 @@ const state = {
   apiKey: localStorage.getItem(LS.key) || '',
   model: localStorage.getItem(LS.model) || 'deepseek-chat',
   custom: localStorage.getItem(LS.custom) || '',
-  file: localStorage.getItem(LS.file) || '',
+  chats: [],
+  currentChatId: localStorage.getItem(LS.current) || '',
   messages: [],
+  file: '',
   busy: false
 };
-try {
-  state.messages = JSON.parse(localStorage.getItem(LS.messages) || '[]');
-  if (!Array.isArray(state.messages)) state.messages = [];
-} catch { state.messages = []; }
 
 let pendingAttachments = [];
 let currentController = null;
@@ -228,47 +256,194 @@ let streamRaf = null;
 
 const $ = s => document.querySelector(s);
 
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
 function saveState() {
   try {
     localStorage.setItem(LS.key, state.apiKey);
     localStorage.setItem(LS.model, state.model);
     localStorage.setItem(LS.custom, state.custom);
-    localStorage.setItem(LS.file, state.file);
+    localStorage.setItem(LS.current, state.currentChatId);
   } catch (e) { console.warn('save meta failed', e); }
 
-  const cleanMessages = state.messages.map(m => {
-    let content = m.content;
-    // Если контент — массив блоков (изображения), заменяем base64 на текст при сохранении
-    if (Array.isArray(content)) {
-      content = content.map(part => {
-        if (part.type === 'image_url') {
-          return { type: 'image_url', image_url: { url: '[Изображение]' } };
-        }
-        return part;
-      });
-    }
-    if (m._attachments) {
-      const att = m._attachments.filter(a => a.type !== 'image');
-      if (att.length) return { ...m, content, _attachments: att };
-      const { _attachments, ...rest } = m;
-      return { ...rest, content };
-    }
-    return { ...m, content };
-  });
+  const chat = state.chats.find(c => c.id === state.currentChatId);
+  if (chat) {
+    chat.messages = state.messages;
+    chat.file = state.file;
+  }
 
-  let msgs = cleanMessages;
-  for (let attempt = 0; attempt < 30; attempt++) {
+  const cleanChats = state.chats.map(c => ({
+    ...c,
+    messages: c.messages.map(m => {
+      let content = m.content;
+      if (Array.isArray(content)) {
+        content = content.map(p => p.type === 'image_url' ? { type: 'image_url', image_url: { url: '[Изображение]' } } : p);
+      }
+      const cleanM = { ...m, content };
+      delete cleanM._streaming;
+      if (m._attachments) {
+        const att = m._attachments.filter(a => a.type !== 'image');
+        if (att.length) cleanM._attachments = att;
+        else delete cleanM._attachments;
+      }
+      return cleanM;
+    })
+  }));
+
+  let str = JSON.stringify(cleanChats);
+  for (let attempt = 0; attempt < 20; attempt++) {
     try {
-      localStorage.setItem(LS.messages, JSON.stringify(msgs));
+      localStorage.setItem(LS.chats, str);
       return;
     } catch (e) {
-      if (msgs.length <= 2) {
-        try { localStorage.removeItem(LS.messages); } catch {}
+      if (cleanChats.length <= 1) {
+        try { localStorage.removeItem(LS.chats); } catch {}
         return;
       }
-      msgs = msgs.slice(2);
+      // Удаляем самый старый чат, кроме текущего
+      const toDel = cleanChats.filter(c => c.id !== state.currentChatId).pop();
+      if (!toDel) return;
+      const idx = cleanChats.indexOf(toDel);
+      cleanChats.splice(idx, 1);
+      str = JSON.stringify(cleanChats);
     }
   }
+}
+
+function loadChats() {
+  try {
+    const raw = localStorage.getItem(LS.chats);
+    if (raw) {
+      state.chats = JSON.parse(raw);
+      // Миграция со старой версии
+      if (!Array.isArray(state.chats)) {
+        const oldMsgs = JSON.parse(localStorage.getItem('dsb_messages') || '[]');
+        const oldFile = localStorage.getItem('dsb_file') || '';
+        if (oldMsgs.length || oldFile) {
+          state.chats = [{ id: generateId(), title: 'Мой проект', messages: oldMsgs, file: oldFile, updatedAt: Date.now() }];
+        } else {
+          state.chats = [];
+        }
+      }
+    } else {
+      state.chats = [];
+    }
+  } catch { state.chats = []; }
+
+  if (!state.chats.length) {
+    const id = generateId();
+    state.chats.push({ id, title: 'Новый чат', messages: [], file: '', updatedAt: Date.now() });
+    state.currentChatId = id;
+  } else if (!state.chats.find(c => c.id === state.currentChatId)) {
+    state.currentChatId = state.chats[0].id;
+  }
+
+  const active = state.chats.find(c => c.id === state.currentChatId);
+  if (active) {
+    state.messages = active.messages || [];
+    state.file = active.file || '';
+    // восстанавливаем base64, если они были сохранены
+    state.messages.forEach(m => {
+      if (Array.isArray(m.content)) {
+        m.content = m.content.map(p => p.image_url && p.image_url.url === '[Изображение]' ? { type: 'image_url', image_url: { url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=' } } : p);
+      }
+    });
+  }
+}
+
+function renderChatList() {
+  const box = $('#chatList');
+  box.innerHTML = '';
+  state.chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  state.chats.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'chat-item' + (c.id === state.currentChatId ? ' active' : '');
+    div.onclick = (e) => {
+      if (e.target.classList.contains('del')) return;
+      switchChat(c.id);
+    };
+
+    const title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = c.title || 'Без названия';
+    
+    const del = document.createElement('span');
+    del.className = 'del';
+    del.textContent = '×';
+    del.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Удалить этот чат?')) deleteChat(c.id);
+    };
+
+    div.appendChild(title);
+    div.appendChild(del);
+    box.appendChild(div);
+  });
+}
+
+function switchChat(id) {
+  if (state.busy) {
+    if (!confirm('Идёт генерация. Прервать и переключить чат?')) return;
+    if (currentController) currentController.abort();
+  }
+  saveState();
+  state.currentChatId = id;
+  const chat = state.chats.find(c => c.id === id);
+  if (chat) {
+    state.messages = chat.messages || [];
+    state.file = chat.file || '';
+  } else {
+    state.messages = [];
+    state.file = '';
+  }
+  
+  renderChatList();
+  renderMessages();
+  $('#code').value = state.file;
+  lastPreviewHtml = null;
+  updatePreview(true);
+  saveState();
+}
+
+function createNewChat() {
+  if (state.busy) {
+    if (!confirm('Идёт генерация. Создать новый чат?')) return;
+    if (currentController) currentController.abort();
+  }
+  saveState();
+  const id = generateId();
+  state.chats.unshift({ id, title: 'Новый чат', messages: [], file: '', updatedAt: Date.now() });
+  state.currentChatId = id;
+  state.messages = [];
+  state.file = '';
+  
+  renderChatList();
+  renderMessages();
+  $('#code').value = state.file;
+  lastPreviewHtml = null;
+  updatePreview(true);
+  saveState();
+}
+
+function deleteChat(id) {
+  if (state.chats.length === 1) {
+    alert('Нельзя удалить последний чат. Создайте новый.');
+    return;
+  }
+  state.chats = state.chats.filter(c => c.id !== id);
+  if (state.currentChatId === id) {
+    state.currentChatId = state.chats[0].id;
+    const chat = state.chats[0];
+    state.messages = chat.messages || [];
+    state.file = chat.file || '';
+    renderMessages();
+    $('#code').value = state.file;
+    lastPreviewHtml = null;
+    updatePreview(true);
+  }
+  renderChatList();
+  saveState();
 }
 
 function truncate(s, n) {
@@ -287,7 +462,7 @@ function buildMessageNode(m) {
         if (att.type === 'image') {
           const img = document.createElement('img');
           img.src = att.content;
-          img.style.maxWidth = '100%'; img.style.maxHeight = '200px'; img.style.borderRadius = '6px';
+          img.style.cssText = 'max-width:100%;max-height:200px;border-radius:6px;';
           attBox.appendChild(img);
         } else {
           const f = document.createElement('div');
@@ -654,6 +829,10 @@ async function runAgent() {
     setBusy(false);
     currentController = null;
     setStatus('готов', true);
+    const chat = state.chats.find(c => c.id === state.currentChatId);
+    if (chat) chat.updatedAt = Date.now();
+    renderChatList();
+    saveState();
   }
 }
 
@@ -666,9 +845,15 @@ function send() {
   const text = ta.value.trim();
   if (!text && !pendingAttachments.length) return;
 
+  // Автогенерация заголовка при первом сообщении
+  const chat = state.chats.find(c => c.id === state.currentChatId);
+  if (chat && chat.title === 'Новый чат' && state.messages.filter(m => m.role === 'user').length === 0) {
+    chat.title = truncate(text || 'Фото/Файл', 30);
+    renderChatList();
+  }
+
   let textPart = text;
   const imagesToSend = [];
-
   for (const att of pendingAttachments) {
     if (att.type === 'text') {
       textPart += '\n\nФайл `' + att.name + '`:\n```\n' + att.content + '\n```';
@@ -680,10 +865,7 @@ function send() {
   let finalContent;
   if (imagesToSend.length > 0) {
     finalContent = [{ type: 'text', text: textPart }];
-    for (const img of imagesToSend) {
-      finalContent.push({ type: 'image_url', image_url: { url: img.content } });
-    }
-    // Автоматически переключаем на модель с поддержкой зрения
+    for (const img of imagesToSend) finalContent.push({ type: 'image_url', image_url: { url: img.content } });
     if (state.model !== 'deepseek-flash' && state.model !== 'deepseek-v4-flash-vision-exp') {
       state.model = 'deepseek-flash';
       $('#model').value = state.model;
@@ -695,12 +877,7 @@ function send() {
   ta.value = '';
   autoResize();
 
-  state.messages.push({
-    role: 'user',
-    content: finalContent,
-    _attachments: [...pendingAttachments]
-  });
-
+  state.messages.push({ role: 'user', content: finalContent, _attachments: [...pendingAttachments] });
   pendingAttachments = [];
   renderAttachments();
   renderMessages();
@@ -720,6 +897,8 @@ $('#input').addEventListener('keydown', e => {
 });
 $('#btnSend').addEventListener('click', send);
 
+$('#btnNewChat').addEventListener('click', createNewChat);
+
 $('#btnAttach').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', async (e) => {
   const files = e.target.files;
@@ -736,12 +915,7 @@ $('#fileInput').addEventListener('change', async (e) => {
       if (file.type.startsWith('image/')) reader.readAsDataURL(file);
       else reader.readAsText(file);
     });
-    pendingAttachments.push({
-      type: file.type.startsWith('image/') ? 'image' : 'text',
-      name: file.name,
-      mime: file.type,
-      content
-    });
+    pendingAttachments.push({ type: file.type.startsWith('image/') ? 'image' : 'text', name: file.name, mime: file.type, content });
   }
   renderAttachments();
   e.target.value = '';
@@ -762,15 +936,6 @@ $('#model').addEventListener('input', e => {
 $('#thinkingToggle').addEventListener('change', e => {
   state.model = e.target.checked ? 'deepseek-reasoner' : 'deepseek-chat';
   $('#model').value = state.model;
-  saveState();
-});
-
-$('#btnReset').addEventListener('click', () => {
-  if (!confirm('Очистить чат и файл?')) return;
-  state.messages = [];
-  setFile('');
-  renderMessages();
-  try { localStorage.removeItem(LS.messages); localStorage.removeItem(LS.file); } catch {}
   saveState();
 });
 
@@ -811,11 +976,22 @@ function init() {
   $('#apiKey').value = state.apiKey;
   $('#model').value = state.model;
   syncToggleFromModel();
+  
+  loadChats();
+  renderChatList();
   renderMessages();
+  
   $('#code').value = state.file;
   updatePreview(true);
   setStatus('готов', true);
 }
+
+window.addEventListener('beforeunload', () => {
+  const chat = state.chats.find(c => c.id === state.currentChatId);
+  if (chat) chat.updatedAt = Date.now();
+  saveState();
+});
+
 init();
 })();
 </script>
