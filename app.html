@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DS Builder</title>
+<style>
+:root{
+  --bg:#0f1117; --panel:#161a23; --panel2:#1d222d; --border:#262c3a;
+  --text:#e6e9ef; --muted:#8b94a7; --accent:#4f8cff; --accent2:#6ea8ff;
+  --user:#25314a; --assistant:#1b2030; --danger:#ef4444; --ok:#22c55e;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);display:flex;flex-direction:column;
+}
+header{
+  display:flex;gap:8px;align-items:center;padding:10px 14px;
+  background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+header h1{font-size:15px;margin:0 10px 0 0;font-weight:600;letter-spacing:.3px}
+header h1 span{color:var(--accent)}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input[type=text],input[type=password],select,textarea{
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+button{
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  padding:7px 12px;cursor:pointer;transition:.15s;
+}
+button:hover{border-color:var(--accent);color:#fff}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:var(--accent2)}
+button.primary.danger{background:var(--danger);border-color:var(--danger)}
+button.primary.danger:hover{background:#dc2626}
+button:disabled{opacity:.5;cursor:not-allowed}
+label.toggle{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 10px;
+  background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;font-size:13px;user-select:none;transition:.15s;
+}
+label.toggle:hover{border-color:var(--accent)}
+label.toggle input{accent-color:var(--accent);cursor:pointer;margin:0}
+main{flex:1;display:flex;min-height:0}
+#chat{width:46%;min-width:320px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--panel)}
+#messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{padding:10px 13px;border-radius:12px;word-wrap:break-word;font-size:14px;line-height:1.5}
+.msg.user{background:var(--user);align-self:flex-end;max-width:85%;white-space:pre-wrap}
+.msg.assistant{background:var(--assistant);align-self:flex-start;border:1px solid var(--border);max-width:95%;min-width:60px}
+.msg.tool{background:#12151c;border:1px dashed var(--border);color:var(--muted);font-family:ui-monospace,monospace;font-size:12px;align-self:stretch;max-height:140px;overflow:auto;white-space:pre-wrap}
+.content-block{white-space:pre-wrap}
+.msg.streaming .content-block:empty::before{content:'…';color:var(--muted)}
+.reasoning-block{
+  margin:0 0 10px 0;padding:6px 10px;background:#0e1219;
+  border-left:3px solid var(--accent2);border-radius:6px;font-size:12.5px;color:#a8b1c4;
+}
+.reasoning-block summary{cursor:pointer;user-select:none;color:#8b94a7;font-size:12px;outline:none}
+.reasoning-block[open] summary{margin-bottom:6px}
+.reasoning-text{
+  white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  line-height:1.5;max-height:360px;overflow-y:auto;
+}
+.tool-calls{margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,monospace}
+.tool-calls div{padding:2px 0}
+#composer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end}
+#composer textarea{flex:1;resize:none;min-height:44px;max-height:180px;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--border)}
+#right{flex:1;display:flex;flex-direction:column;min-width:0;background:#0a0c11}
+#tabs{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--panel);align-items:center}
+#tabs .tab{padding:5px 12px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid transparent}
+#tabs .tab.active{background:var(--panel2);color:#fff;border-color:var(--border)}
+#tabs .spacer{flex:1}
+#previewPane{flex:1;display:flex;min-height:0}
+#preview{flex:1;border:0;background:#fff;width:100%;height:100%}
+#codePane{flex:1;display:none;min-height:0}
+#code{flex:1;width:100%;height:100%;border:0;background:#0a0c11;color:#d6deeb;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;padding:14px;resize:none;outline:none;tab-size:2}
+#empty{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--danger);margin-right:6px}
+.dot.online{background:var(--ok)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal.open{display:flex}
+.modal .box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;width:min(620px,100%);display:flex;flex-direction:column;gap:10px}
+.modal .box h2{margin:0;font-size:16px}
+.modal .box textarea{min-height:180px;resize:vertical;font-family:ui-monospace,monospace;font-size:13px}
+.modal .box small{color:var(--muted)}
+.row{display:flex;gap:8px;justify-content:flex-end}
+@media (max-width:820px){
+  main{flex-direction:column}
+  #chat{width:100%;height:50%;border-right:none;border-bottom:1px solid var(--border)}
+  #right{height:50%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DS<span>Builder</span></h1>
+  <input id="apiKey" type="password" placeholder="DeepSeek API key" style="width:200px" autocomplete="off" />
+  <input id="model" list="models" value="deepseek-chat" style="width:150px" autocomplete="off" />
+  <datalist id="models">
+    <option value="deepseek-chat"></option>
+    <option value="deepseek-reasoner"></option>
+  </datalist>
+  <label class="toggle" title="Режим размышления (deepseek-reasoner)">
+    <input type="checkbox" id="thinkingToggle" />
+    <span>🧠 Думать</span>
+  </label>
+  <button id="btnCustom">Доп. инструкции</button>
+  <span style="flex:1"></span>
+  <span id="status"><span class="dot online"></span><span id="statusText">готов</span></span>
+  <button id="btnReset" title="Очистить чат и файл">Сброс</button>
+</header>
+
+<main>
+  <section id="chat">
+    <div id="messages"></div>
+    <div id="composer">
+      <textarea id="input" placeholder="Опиши, что создать или изменить... (Enter — отправить, Shift+Enter — перенос)"></textarea>
+      <button id="btnSend" class="primary">Отправить</button>
+    </div>
+  </section>
+  <section id="right">
+    <div id="tabs">
+      <div class="tab active" data-tab="preview">Предпросмотр</div>
+      <div class="tab" data-tab="code">Код</div>
+      <div class="spacer"></div>
+      <button id="btnDownload" title="Скачать HTML">Скачать</button>
+    </div>
+    <div id="previewPane"><iframe id="preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-pointer-lock"></iframe></div>
+    <div id="codePane"><textarea id="code" spellcheck="false"></textarea></div>
+  </section>
+</main>
+
+<div class="modal" id="customModal">
+  <div class="box">
+    <h2>Дополнительные инструкции</h2>
+    <small>Этот текст добавляется в конец системного промпта.</small>
+    <textarea id="customText" placeholder="Например: всегда используй тёмную тему, добавляй анимации, пиши на английском..."></textarea>
+    <div class="row">
+      <button id="btnCustomCancel">Отмена</button>
+      <button id="btnCustomSave" class="primary">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ПРОДОЛЖЕНИЕ В ЧАСТИ 2 -->
+  <script>
+(() => {
+'use strict';
+
+/* ============================ КОНСТАНТЫ ============================ */
+
+const LS = {
+  key: 'dsb_key',
+  model: 'dsb_model',
+  messages: 'dsb_messages',
+  file: 'dsb_file',
+  custom: 'dsb_custom'
+};
+
+const EMPTY_PREVIEW = '<!doctype html><html><body style="font-family:sans-serif;color:#888;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fff">Предпросмотр появится здесь</body></html>';
+
+const DEFAULT_SYSTEM = `Ты — ассистент, который создаёт и редактирует один HTML-файл (одностраничный веб-проект) по запросу пользователя.
+Файл — это полный HTML-документ: <!DOCTYPE html>, <html>, <head>, <style>, <body>, <script>. Всё в одном файле, без сборки и внешних зависимостей (CDN можно).
+
+Инструменты:
+- read_file — прочитать текущее содержимое файла.
+- write_file — записать файл целиком. Используй ТОЛЬКО если файл пустой (первичное создание).
+- edit_file — заменить точный фрагмент файла. old_string должен точно совпадать (включая отступы, кавычки, переносы) и встречаться один раз. new_string — новая версия фрагмента.
+
+Правила:
+- Если файл не пуст и нужно что-то менять — сначала вызывай read_file, чтобы видеть реальное содержимое.
+- Изменяй существующий файл ТОЛЬКО через edit_file небольшими точными фрагментами. Не переписывай весь файл целиком.
+- Можно делать несколько правок подряд, вызывая инструменты несколько раз.
+- После завершения правок кратко сообщи пользователю, что изменил.
+
+Отвечай на русском.`;
+
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'read_file',
+      description: 'Прочитать текущее содержимое HTML-файла проекта.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'write_file',
+      description: 'Записать файл целиком. Использовать ТОЛЬКО если файл пустой (первичное создание).',
+      parameters: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Полное содержимое HTML-файла' }
+        },
+        required: ['content']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'edit_file',
+      description: 'Заменить точный фрагмент файла. old_string должен встречаться ровно один раз (или set replace_all=true). Используй маленькие точечные правки.',
+      parameters: {
+        type: 'object',
+        properties: {
+          old_string: { type: 'string', description: 'Точный фрагмент, который нужно заменить' },
+          new_string: { type: 'string', description: 'Новый фрагмент' },
+          replace_all: { type: 'boolean', description: 'Заменить все вхождения' }
+        },
+        required: ['old_string', 'new_string']
+      }
+    }
+  }
+];
+
+/* ============================ СОСТОЯНИЕ ============================ */
+
+const state = {
+  apiKey: localStorage.getItem(LS.key) || '',
+  model: localStorage.getItem(LS.model) || 'deepseek-chat',
+  custom: localStorage.getItem(LS.custom) || '',
+  file: localStorage.getItem(LS.file) || '',
+  messages: [],
+  busy: false
+};
+try {
+  state.messages = JSON.parse(localStorage.getItem(LS.messages) || '[]');
+  if (!Array.isArray(state.messages)) state.messages = [];
+} catch { state.messages = []; }
+
+let currentController = null;
+let lastPreviewHtml = null;
+let previewTimer = null;
+let streamRaf = null;
+
+const $ = s => document.querySelector(s);
+
+/* ============================ ПЕРСИСТ ============================ */
+
+function saveState() {
+  try {
+    localStorage.setItem(LS.key, state.apiKey);
+    localStorage.setItem(LS.model, state.model);
+    localStorage.setItem(LS.custom, state.custom);
+    localStorage.setItem(LS.file, state.file);
+  } catch (e) { console.warn('save meta failed', e); }
+
+  let msgs = state.messages;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      localStorage.setItem(LS.messages, JSON.stringify(msgs));
+      return;
+    } catch (e) {
+      if (msgs.length <= 2) {
+        try { localStorage.removeItem(LS.messages); } catch {}
+        return;
+      }
+      msgs = msgs.slice(2);
+    }
+  }
+}
+
+/* ============================ UI: ЧАТ ============================ */
+
+function truncate(s, n) {
+  s = String(s ?? '');
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+function buildMessageNode(m) {
+  const div = document.createElement('div');
+
+  if (m.role === 'user') {
+    div.className = 'msg user';
+    div.textContent = m.content || '';
+    return div;
+  }
+
+  if (m.role === 'tool') {
+    div.className = 'msg tool';
+    div.textContent = '↩ ' + truncate(m.content, 600);
+    return div;
+  }
+
+  if (m.role === 'assistant') {
+    div.className = 'msg assistant' + (m._streaming ? ' streaming' : '');
+
+    if (m.reasoning_content) {
+      const det = document.createElement('details');
+      det.className = 'reasoning-block';
+      const sum = document.createElement('summary');
+      sum.textContent = '🧠 Размышление';
+      const txt = document.createElement('div');
+      txt.className = 'reasoning-text';
+      txt.textContent = m.reasoning_content;
+      det.appendChild(sum);
+      det.appendChild(txt);
+      div.appendChild(det);
+    }
+
+    const c = document.createElement('div');
+    c.className = 'content-block';
+    c.textContent = m.content || '';
+    div.appendChild(c);
+
+    if (m.tool_calls && m.tool_calls.length) {
+      const wrap = document.createElement('div');
+      wrap.className = 'tool-calls';
+      for (const t of m.tool_calls) {
+        if (!t.function) continue;
+        const el = document.createElement('div');
+        el.textContent = '⚙ ' + t.function.name + '(' + truncate(t.function.arguments, 180) + ')';
+        wrap.appendChild(el);
+      }
+      div.appendChild(wrap);
+    }
+
+    return div;
+  }
+
+  return div;
+}
+
+function renderMessages() {
+  const box = $('#messages');
+  box.innerHTML = '';
+  if (!state.messages.length) {
+    box.innerHTML = '<div id="empty">Начни диалог — например: «Сделай красивую страницу-визитку»</div>';
+    return;
+  }
+  for (const m of state.messages) {
+    if (m.role === 'system') continue;
+    box.appendChild(buildMessageNode(m));
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function scrollToBottom() {
+  const box = $('#messages');
+  box.scrollTop = box.scrollHeight;
+}
+
+/* Инкрементальное обновление последнего (стримящегося) сообщения */
+function updateStreamingMessage() {
+  const box = $('#messages');
+  const node = box.querySelector('.msg.assistant.streaming');
+  if (!node) return;
+  const m = state.messages[state.messages.length - 1];
+  if (!m || !m._streaming) return;
+
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
+
+  if (m.reasoning_content) {
+    let rBlock = node.querySelector('.reasoning-block');
+    if (!rBlock) {
+      rBlock = document.createElement('details');
+      rBlock.className = 'reasoning-block';
+      rBlock.innerHTML = '<summary>🧠 Размышление</summary><div class="reasoning-text"></div>';
+      node.insertBefore(rBlock, node.firstChild);
+    }
+    const rTxt = rBlock.querySelector('.reasoning-text');
+    if (rTxt.textContent !== m.reasoning_content) rTxt.textContent = m.reasoning_content;
+  }
+
+  let cBlock = node.querySelector('.content-block');
+  if (!cBlock) {
+    cBlock = document.createElement('div');
+    cBlock.className = 'content-block';
+    node.appendChild(cBlock);
+  }
+  if (cBlock.textContent !== (m.content || '')) cBlock.textContent = m.content || '';
+
+  let tBlock = node.querySelector('.tool-calls');
+  if (m.tool_calls && m.tool_calls.length) {
+    if (!tBlock) {
+      tBlock = document.createElement('div');
+      tBlock.className = 'tool-calls';
+      node.appendChild(tBlock);
+    }
+    tBlock.innerHTML = '';
+    for (const t of m.tool_calls) {
+      if (!t.function) continue;
+      const el = document.createElement('div');
+      el.textContent = '⚙ ' + t.function.name + '(' + truncate(t.function.arguments, 180) + ')';
+      tBlock.appendChild(el);
+    }
+  }
+
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function scheduleStreamUpdate() {
+  if (streamRaf) return;
+  streamRaf = requestAnimationFrame(() => {
+    streamRaf = null;
+    updateStreamingMessage();
+  });
+}
+
+/* ============================ UI: ФАЙЛ ============================ */
+
+function updatePreview(force = false) {
+  if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+  const html = state.file || EMPTY_PREVIEW;
+  if (force || html !== lastPreviewHtml) {
+    lastPreviewHtml = html;
+    $('#preview').srcdoc = html;
+  }
+}
+
+function setFile(content) {
+  state.file = content;
+  saveState();
+  const codeEl = $('#code');
+  if (document.activeElement !== codeEl) codeEl.value = content;
+  updatePreview();
+}
+
+/* ============================ ИНСТРУМЕНТЫ ============================ */
+
+function executeTool(name, args) {
+  try {
+    if (name === 'read_file') {
+      return state.file ? state.file : '(файл пуст)';
+    }
+
+    if (name === 'write_file') {
+      if (state.file.trim() !== '') {
+        return 'ОШИБКА: файл не пуст. Используй edit_file для точечных правок.';
+      }
+      setFile(args.content || '');
+      return 'OK: файл записан полностью (' + state.file.length + ' символов).';
+    }
+
+    if (name === 'edit_file') {
+      const oldStr = args.old_string ?? '';
+      const newStr = args.new_string ?? '';
+      const all = !!args.replace_all;
+
+      if (!oldStr) return 'ОШИБКА: old_string пустой.';
+      if (!state.file) return 'ОШИБКА: файл пуст. Сначала write_file.';
+
+      const idx = state.file.indexOf(oldStr);
+      if (idx === -1) {
+        return 'ОШИБКА: old_string не найден в файле. Прочитай файл через read_file и используй точный фрагмент.';
+      }
+
+      if (!all) {
+        const idx2 = state.file.indexOf(oldStr, idx + oldStr.length);
+        if (idx2 !== -1) {
+          return 'ОШИБКА: old_string встречается несколько раз. Уточни фрагмент или используй replace_all=true.';
+        }
+        setFile(state.file.slice(0, idx) + newStr + state.file.slice(idx + oldStr.length));
+      } else {
+        setFile(state.file.split(oldStr).join(newStr));
+      }
+      return 'OK: заменено. Новый размер файла ' + state.file.length + ' символов.';
+    }
+
+    return 'ОШИБКА: неизвестный инструмент ' + name;
+  } catch (e) {
+    return 'ОШИБКА: ' + e.message;
+  }
+}
+
+/* ПРОДОЛЖЕНИЕ В ЧАСТИ 3 */
+ /* ============================ API ============================ */
+
+function sanitizeMessages(messages) {
+  const out = [];
+  for (const m of messages) {
+    if (m._streaming) continue;
+    if (m.role === 'tool') {
+      const prev = out[out.length - 1];
+      if (prev && prev.role === 'assistant' && prev.tool_calls &&
+          prev.tool_calls.some(t => t.id === m.tool_call_id)) {
+        out.push({ role: 'tool', tool_call_id: m.tool_call_id, content: m.content || '' });
+      }
+      continue;
+    }
+    const c = { role: m.role, content: m.content || '' };
+    if (m.tool_calls && m.tool_calls.length) {
+      c.tool_calls = m.tool_calls.map(t => ({
+        id: t.id,
+        type: t.type || 'function',
+        function: { name: t.function.name, arguments: t.function.arguments }
+      }));
+    }
+    out.push(c);
+  }
+  for (let i = 0; i < out.length; i++) {
+    const m = out[i];
+    if (m.role === 'assistant' && m.tool_calls) {
+      const ids = m.tool_calls.map(t => t.id);
+      const following = out.slice(i + 1, i + 1 + ids.length);
+      const ok = ids.every(id => following.some(f => f.role === 'tool' && f.tool_call_id === id));
+      if (!ok) {
+        out[i] = { role: 'assistant', content: (m.content || '') + ' [действия пропущены]' };
+      }
+    }
+  }
+  while (out.length && out[0].role === 'tool') out.shift();
+  return out;
+}
+
+async function streamApiCall(onDelta, signal) {
+  if (!state.apiKey) throw new Error('Укажи DeepSeek API key в шапке');
+
+  const systemContent = DEFAULT_SYSTEM + (state.custom.trim() ? '\n\n' + state.custom.trim() : '');
+  const msgs = sanitizeMessages(state.messages);
+
+  const body = {
+    model: state.model,
+    messages: [{ role: 'system', content: systemContent }, ...msgs],
+    temperature: 0.7,
+    stream: true,
+    tools: TOOLS,
+    tool_choice: 'auto'
+  };
+
+  const resp = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + state.apiKey
+    },
+    body: JSON.stringify(body),
+    signal
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error('API ' + resp.status + ': ' + truncate(t, 500));
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let content = '';
+  let reasoning = '';
+  const toolCalls = [];
+
+  const handleLines = (lines) => {
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+
+      let json;
+      try { json = JSON.parse(data); } catch { continue; }
+      if (json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+
+      const choice = json.choices && json.choices[0];
+      if (!choice) continue;
+      const delta = choice.delta || {};
+
+      if (delta.reasoning_content) {
+        reasoning += delta.reasoning_content;
+        onDelta({ type: 'reasoning', full: reasoning });
+      }
+      if (delta.content) {
+        content += delta.content;
+        onDelta({ type: 'content', full: content });
+      }
+      if (delta.tool_calls) {
+        for (const tc of delta.tool_calls) {
+          const idx = typeof tc.index === 'number' ? tc.index : 0;
+          if (!toolCalls[idx]) {
+            toolCalls[idx] = { id: '', type: 'function', function: { name: '', arguments: '' } };
+          }
+          const slot = toolCalls[idx];
+          if (tc.id) slot.id = tc.id;
+          if (tc.function) {
+            if (tc.function.name) slot.function.name += tc.function.name;
+            if (tc.function.arguments) slot.function.arguments += tc.function.arguments;
+          }
+        }
+        onDelta({ type: 'tool_calls', tool_calls: toolCalls.filter(Boolean) });
+      }
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    handleLines(lines);
+  }
+  buffer += decoder.decode();
+  if (buffer.trim()) handleLines([buffer]);
+
+  const msg = { role: 'assistant', content };
+  if (reasoning) msg.reasoning_content = reasoning;
+  if (toolCalls.length) msg.tool_calls = toolCalls.filter(Boolean);
+  return msg;
+}
+
+/* ============================ АГЕНТ ============================ */
+
+function setStatus(text, online) {
+  $('#statusText').textContent = text;
+  $('#status').querySelector('.dot').classList.toggle('online', !!online);
+}
+
+function setBusy(b) {
+  state.busy = b;
+  const btn = $('#btnSend');
+  btn.textContent = b ? '⏹ Стоп' : 'Отправить';
+  btn.classList.toggle('danger', b);
+}
+
+async function runAgent() {
+  if (state.busy) return;
+  setBusy(true);
+  setStatus('работает…', false);
+  currentController = new AbortController();
+
+  try {
+    for (let step = 0; step < 30; step++) {
+      const placeholder = { role: 'assistant', content: '', _streaming: true };
+      state.messages.push(placeholder);
+      renderMessages();
+      scrollToBottom();
+
+      let msg;
+      try {
+        msg = await streamApiCall((delta) => {
+          if (delta.type === 'reasoning') {
+            placeholder.reasoning_content = delta.full;
+          } else if (delta.type === 'content') {
+            placeholder.content = delta.full;
+          } else if (delta.type === 'tool_calls') {
+            placeholder.tool_calls = delta.tool_calls;
+          }
+          scheduleStreamUpdate();
+        }, currentController.signal);
+      } catch (e) {
+        const idx = state.messages.indexOf(placeholder);
+        if (idx !== -1) state.messages.splice(idx, 1);
+        renderMessages();
+
+        if (e.name === 'AbortError') {
+          state.messages.push({ role: 'assistant', content: '⏹ Остановлено.' });
+          renderMessages();
+          saveState();
+          return;
+        }
+        throw e;
+      }
+
+      state.messages[state.messages.length - 1] = msg;
+      renderMessages();
+      saveState();
+
+      if (msg.tool_calls && msg.tool_calls.length) {
+        for (const tc of msg.tool_calls) {
+          let args = {};
+          try { args = JSON.parse(tc.function.arguments || '{}'); } catch { args = {}; }
+          const result = executeTool(tc.function.name, args);
+          state.messages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            content: result
+          });
+        }
+        renderMessages();
+        saveState();
+      } else {
+        break;
+      }
+    }
+  } catch (e) {
+    state.messages.push({ role: 'assistant', content: '⚠️ Ошибка: ' + e.message });
+    renderMessages();
+    saveState();
+  } finally {
+    setBusy(false);
+    currentController = null;
+    setStatus('готов', true);
+  }
+}
+
+function send() {
+  if (state.busy) {
+    if (currentController) currentController.abort();
+    return;
+  }
+  const ta = $('#input');
+  const text = ta.value.trim();
+  if (!text) return;
+  ta.value = '';
+  autoResize();
+  state.messages.push({ role: 'user', content: text });
+  renderMessages();
+  saveState();
+  runAgent();
+}
+
+/* ============================ КОНТРОЛЫ ============================ */
+
+function autoResize() {
+  const ta = $('#input');
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 180) + 'px';
+}
+
+$('#input').addEventListener('input', autoResize);
+$('#input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+$('#btnSend').addEventListener('click', send);
+
+$('#apiKey').addEventListener('input', e => {
+  state.apiKey = e.target.value.trim();
+  saveState();
+});
+
+function syncToggleFromModel() {
+  $('#thinkingToggle').checked = /reasoner/i.test(state.model);
+}
+
+$('#model').addEventListener('input', e => {
+  state.model = e.target.value.trim() || 'deepseek-chat';
+  syncToggleFromModel();
+  saveState();
+});
+
+$('#thinkingToggle').addEventListener('change', e => {
+  const on = e.target.checked;
+  state.model = on ? 'deepseek-reasoner' : 'deepseek-chat';
+  $('#model').value = state.model;
+  saveState();
+});
+
+$('#btnReset').addEventListener('click', () => {
+  if (!confirm('Очистить чат и файл?')) return;
+  state.messages = [];
+  setFile('');
+  renderMessages();
+  try {
+    localStorage.removeItem(LS.messages);
+    localStorage.removeItem(LS.file);
+  } catch {}
+  saveState();
+});
+
+$('#btnDownload').addEventListener('click', () => {
+  if (!state.file) return;
+  const blob = new Blob([state.file], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'project.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+document.querySelectorAll('#tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#tabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const isCode = tab.dataset.tab === 'code';
+    $('#previewPane').style.display = isCode ? 'none' : 'flex';
+    $('#codePane').style.display = isCode ? 'flex' : 'none';
+    if (isCode) $('#code').value = state.file;
+  });
+});
+
+$('#code').addEventListener('input', e => {
+  state.file = e.target.value;
+  saveState();
+  if (previewTimer) clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => updatePreview(), 500);
+});
+
+/* Модалка дополнительных инструкций */
+
+$('#btnCustom').addEventListener('click', () => {
+  $('#customText').value = state.custom;
+  $('#customModal').classList.add('open');
+});
+$('#btnCustomCancel').addEventListener('click', () => {
+  $('#customModal').classList.remove('open');
+});
+$('#btnCustomSave').addEventListener('click', () => {
+  state.custom = $('#customText').value;
+  saveState();
+  $('#customModal').classList.remove('open');
+});
+$('#customModal').addEventListener('click', e => {
+  if (e.target === $('#customModal')) $('#customModal').classList.remove('open');
+});
+
+/* ============================ ИНИЦИАЛИЗАЦИЯ ============================ */
+
+function init() {
+  $('#apiKey').value = state.apiKey;
+  $('#model').value = state.model;
+  syncToggleFromModel();
+  renderMessages();
+  $('#code').value = state.file;
+  updatePreview(true);
+  setStatus('готов', true);
+}
+
+init();
+})();
+</script>
+</body>
+</html>
