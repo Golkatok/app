@@ -203,6 +203,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monos
       <div class="input-box">
         <div class="attach-preview" id="attachment-preview"></div>
         <div class="input-top">
+          <!-- Кнопка DeepThink -->
+          <button class="tool-btn" id="btn-think" title="Режим размышления (R1)">🧠 DeepThink</button>
           <button class="tool-btn" id="btn-img-gen" title="Генерация HTML Canvas">🖼️ Canvas</button>
         </div>
         <div class="input-bottom">
@@ -336,7 +338,6 @@ function saveState() {
       let content = m.content;
       if (Array.isArray(content)) content = content.map(p => p.type === 'image_url' ? { type: 'image_url', image_url: { url: '[IMG]' } } : p);
       const cm = { ...m, content }; delete cm._streaming;
-      // Убираем пустые tool_calls при сохранении
       if (cm.tool_calls && cm.tool_calls.length === 0) delete cm.tool_calls;
       if (m._attachments) {
         const att = m._attachments.filter(a => a.type !== 'image');
@@ -529,7 +530,6 @@ function sanitizeMessages(msgs) {
     
     if (m.role === 'assistant') {
       const c = { role: 'assistant', content: m.content || '' };
-      // Проверяем, что tool_calls существует И не пустой
       if (m.tool_calls && m.tool_calls.length > 0) {
         const next = msgs.slice(i+1, i+1+m.tool_calls.length);
         if (next.every((n, idx) => n.role === 'tool' && n.tool_call_id === m.tool_calls[idx].id)) {
@@ -538,7 +538,7 @@ function sanitizeMessages(msgs) {
           out.push({ role: 'assistant', content: (m.content||'') + ' [действие отменено]' });
         }
       } else {
-        out.push(c); // Если tool_calls нет или он пустой, шлем просто текст
+        out.push(c);
       }
     } else {
       out.push({ role: m.role, content: m.content });
@@ -595,7 +595,6 @@ async function streamApiCall(onDelta, signal) {
   
   const msg = { role: 'assistant', content };
   if (reasoning) msg.reasoning_content = reasoning;
-  // Записываем tool_calls в ответ ТОЛЬКО если там есть хотя бы один элемент
   if (toolCalls.length > 0) msg.tool_calls = toolCalls.filter(Boolean);
   
   return msg;
@@ -677,10 +676,28 @@ function renderAttachments() {
 }
 window.removeAtt = i => { pendingAttachments.splice(i, 1); renderAttachments(); };
 
+// --- СИНХРОНИЗАЦИЯ КНОПКИ DEEPTHINK ---
+function syncModelUI() {
+  const isReasoner = state.model === 'deepseek-reasoner';
+  $('#btn-think').classList.toggle('active', isReasoner);
+  $('#model-select').value = state.model;
+}
+
+$('#btn-think').onclick = () => {
+  state.model = (state.model === 'deepseek-reasoner') ? 'deepseek-chat' : 'deepseek-reasoner';
+  syncModelUI();
+  saveState();
+};
+
 $('#btn-new-chat').onclick = createNewChat;
-$('#api-key').value = state.apiKey; $('#model-select').value = state.model;
+$('#api-key').value = state.apiKey; 
 $('#api-key').oninput = e => { state.apiKey = e.target.value.trim(); saveState(); };
-$('#model-select').onchange = e => { state.model = e.target.value; saveState(); };
+
+$('#model-select').onchange = e => { 
+  state.model = e.target.value; 
+  syncModelUI(); 
+  saveState(); 
+};
 
 $('#user-input').oninput = function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; };
 $('#user-input').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
@@ -741,7 +758,14 @@ $('#btn-custom-prompt').onclick = () => { $('#custom-prompt-text').value = state
 $('#btn-custom-cancel').onclick = () => $('#modal-custom').classList.remove('open');
 $('#btn-custom-save').onclick = () => { state.customPrompt = $('#custom-prompt-text').value; saveState(); $('#modal-custom').classList.remove('open'); };
 
-function init() { setupResizers(); loadState(); renderChatList(); renderMessages(); setFile(state.file, true); }
+function init() { 
+  setupResizers(); 
+  loadState(); 
+  renderChatList(); 
+  renderMessages(); 
+  syncModelUI(); // Применяем состояние кнопки DeepThink при запуске
+  setFile(state.file, true); 
+}
 init();
 
 })();
